@@ -39,6 +39,15 @@
 | ✅ 복용 체크 | 탭 한 번으로 오늘 복용 완료 체크 / 해제 |
 | ✏️ 수정·삭제 | 길게 눌러서 영양제 정보 수정 또는 삭제 |
 
+**알림**
+
+| 기능 | 설명 |
+|---|---|
+| 💧 물 마시기 알림 | 매일 지정 시간에 물 마시기 리마인더 |
+| 💊 영양제 알림 | 아침 / 점심 / 저녁 / 자기 전 각각 시간 설정 가능 |
+| 🔔 개별 ON/OFF | 각 알림을 독립적으로 활성화·비활성화 |
+| 🕐 시간 직접 설정 | 타임피커로 원하는 시각으로 변경 |
+
 **홈 화면 위젯**
 
 | 기능 | 설명 |
@@ -57,8 +66,9 @@
 - **home_widget** — Android 홈 화면 위젯 (인터랙티브)
 - **image_picker** — 카메라 / 갤러리 영양제 사진 등록
 - **percent_indicator** — 원형 물 섭취 프로그레스
-- **flutter_local_notifications** — 로컬 알림 (v2 예정)
-- **shared_preferences** — 목표량 / 컵 크기 설정 저장
+- **flutter_local_notifications** — 로컬 알림 (물 / 영양제 시간대별 매일 반복)
+- **timezone** — 정확한 한국 시간 기반 알림 스케줄링
+- **shared_preferences** — 목표량 / 컵 크기 / 알림 설정 저장
 - **flutter_launcher_icons** — 앱 아이콘 자동 생성
 
 <br>
@@ -101,22 +111,24 @@ flutter pub run flutter_launcher_icons
 lib/
 ├── main.dart
 ├── models/
-│   ├── supplement.dart        # 영양제 모델
-│   └── water_log.dart         # 물 기록 모델
+│   ├── supplement.dart            # 영양제 모델
+│   └── water_log.dart             # 물 기록 모델
 ├── database/
-│   └── db_helper.dart         # SQLite 헬퍼
+│   └── db_helper.dart             # SQLite 헬퍼
 ├── providers/
-│   ├── water_provider.dart    # 물 섭취 상태 관리
-│   └── supplement_provider.dart
+│   ├── water_provider.dart        # 물 섭취 상태 관리
+│   ├── supplement_provider.dart   # 영양제 상태 관리
+│   └── notification_provider.dart # 알림 설정 상태 관리
 ├── screens/
-│   ├── home_screen.dart       # 메인 화면
+│   ├── home_screen.dart           # 메인 화면
 │   ├── add_supplement_screen.dart
-│   └── settings_screen.dart
+│   └── settings_screen.dart      # 설정 (목표량 + 알림)
 ├── widgets/
 │   ├── water_tracker_widget.dart
 │   └── supplement_card.dart
 ├── services/
-│   └── widget_service.dart    # 홈 화면 위젯 동기화
+│   ├── notification_service.dart  # 알림 초기화 / 스케줄링
+│   └── widget_service.dart        # 홈 화면 위젯 동기화
 └── theme/
     └── app_theme.dart
 ```
@@ -127,6 +139,7 @@ lib/
 
 | 버전 | 내용 |
 |---|---|
+| v1.2.0 | 알림 기능 추가 — 물 마시기 / 영양제 시간대별 매일 알림, 시각 직접 설정 |
 | v1.1.0 | 홈 화면 위젯 추가 (물 현황 표시 + 한 잔 버튼) |
 | v1.0.0 | 최초 출시 — 물 트래커, 영양제 사진 등록 및 복용 체크 |
 

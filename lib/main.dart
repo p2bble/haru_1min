@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/home_screen.dart';
+import 'services/notification_service.dart';
 import 'services/widget_service.dart';
 import 'theme/app_theme.dart';
 
@@ -10,6 +11,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ko', null);
   await WidgetService.init();
+  await NotificationService.init();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
