@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">하루 1분</string>
+    <string name="widget_description">오늘의 물 섭취량과 영양제 현황을 홈 화면에서 확인하세요</string>
+</resources>
