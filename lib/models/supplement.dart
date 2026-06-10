@@ -3,6 +3,7 @@ class Supplement {
   final String name;
   final String? imagePath;
   final String mealTime; // morning, lunch, dinner, bedtime
+  final String? memo; // 복용 팁 (AI 분석 결과 또는 직접 입력)
   final bool isActive;
   final DateTime createdAt;
 
@@ -11,6 +12,7 @@ class Supplement {
     required this.name,
     this.imagePath,
     required this.mealTime,
+    this.memo,
     this.isActive = true,
     required this.createdAt,
   });
@@ -20,6 +22,7 @@ class Supplement {
     String? name,
     String? imagePath,
     String? mealTime,
+    String? memo,
     bool? isActive,
     DateTime? createdAt,
   }) {
@@ -28,6 +31,7 @@ class Supplement {
       name: name ?? this.name,
       imagePath: imagePath ?? this.imagePath,
       mealTime: mealTime ?? this.mealTime,
+      memo: memo ?? this.memo,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -39,6 +43,7 @@ class Supplement {
       'name': name,
       'imagePath': imagePath,
       'mealTime': mealTime,
+      'memo': memo,
       'isActive': isActive ? 1 : 0,
       'createdAt': createdAt.toIso8601String(),
     };
@@ -50,6 +55,7 @@ class Supplement {
       name: map['name'],
       imagePath: map['imagePath'],
       mealTime: map['mealTime'],
+      memo: map['memo'],
       isActive: map['isActive'] == 1,
       createdAt: DateTime.parse(map['createdAt']),
     );

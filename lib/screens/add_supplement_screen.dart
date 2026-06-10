@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../models/supplement.dart';
 import '../providers/supplement_provider.dart';
 import '../services/image_store.dart';
+import '../services/supplement_ai_service.dart';
 import '../theme/app_theme.dart';
 
 class AddSupplementScreen extends ConsumerStatefulWidget {
@@ -18,14 +19,17 @@ class AddSupplementScreen extends ConsumerStatefulWidget {
 
 class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
   final _nameController = TextEditingController();
+  final _memoController = TextEditingController();
   String _selectedMealTime = 'morning';
   String? _imagePath;
+  bool _isAnalyzing = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.existing != null) {
       _nameController.text = widget.existing!.name;
+      _memoController.text = widget.existing!.memo ?? '';
       _selectedMealTime = widget.existing!.mealTime;
       _imagePath = widget.existing!.imagePath;
     }
@@ -34,7 +38,39 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _memoController.dispose();
     super.dispose();
+  }
+
+  Future<void> _analyzeImage() async {
+    if (_imagePath == null) return;
+    setState(() => _isAnalyzing = true);
+    final result = await SupplementAiService.analyze(File(_imagePath!));
+    if (!mounted) return;
+    setState(() => _isAnalyzing = false);
+
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('분석에 실패했어요. 네트워크를 확인하고 다시 시도해주세요.')),
+      );
+      return;
+    }
+    setState(() {
+      if (result.name != null && result.name!.isNotEmpty) {
+        _nameController.text = result.name!;
+      }
+      _selectedMealTime = result.mealTime;
+      if (result.tip != null && result.tip!.isNotEmpty) {
+        _memoController.text = result.tip!;
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            'AI 분석 완료! ${mealTimeLabels[result.mealTime]} 복용을 추천해요.'),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Future<void> _pickImage() async {
@@ -89,12 +125,14 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
       return;
     }
 
+    final memo = _memoController.text.trim();
     if (widget.existing != null) {
       await ref.read(supplementListProvider.notifier).update(
             widget.existing!.copyWith(
               name: name,
               imagePath: _imagePath,
               mealTime: _selectedMealTime,
+              memo: memo.isEmpty ? null : memo,
             ),
           );
       if (_imagePath != widget.existing!.imagePath) {
@@ -106,6 +144,7 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
               name: name,
               imagePath: _imagePath,
               mealTime: _selectedMealTime,
+              memo: memo.isEmpty ? null : memo,
               createdAt: DateTime.now(),
             ),
           );
@@ -161,6 +200,26 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
                 ),
               ),
             ),
+            if (_imagePath != null) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: OutlinedButton.icon(
+                  onPressed: _isAnalyzing ? null : _analyzeImage,
+                  icon: _isAnalyzing
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_awesome, size: 16),
+                  label: Text(_isAnalyzing ? '분석 중...' : 'AI로 자동 분석'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.supplementDark,
+                    side: const BorderSide(color: AppColors.supplement),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 28),
             const Text('영양제 이름', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 8),
@@ -199,6 +258,25 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
                   ),
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 24),
+            const Text('복용 팁 (선택)',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _memoController,
+              maxLines: 2,
+              decoration: InputDecoration(
+                hintText: 'AI 분석 시 자동으로 채워져요',
+                filled: true,
+                fillColor: AppColors.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
             ),
             const SizedBox(height: 40),
             SizedBox(

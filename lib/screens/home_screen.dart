@@ -224,6 +224,16 @@ class _SupplementSection extends ConsumerWidget {
         children: [
           const SizedBox(height: 16),
           Text(supplement.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          if (supplement.memo != null && supplement.memo!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
+              child: Text(
+                '💡 ${supplement.memo}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ),
           const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.edit_rounded, color: AppColors.supplement),
