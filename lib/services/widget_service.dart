@@ -5,8 +5,7 @@ import '../database/db_helper.dart';
 class WidgetService {
   static Future<void> init() async {
     await HomeWidget.setAppGroupId('com.p2bble.haru_1min');
-    // ignore: deprecated_member_use
-    await HomeWidget.registerBackgroundCallback(backgroundCallback);
+    await HomeWidget.registerInteractivityCallback(backgroundCallback);
   }
 
   static Future<void> update({
@@ -22,6 +21,9 @@ class WidgetService {
       HomeWidget.saveWidgetData('cup_size', cupSize),
       HomeWidget.saveWidgetData('supplement_taken', supplementTaken),
       HomeWidget.saveWidgetData('supplement_total', supplementTotal),
+      // 자정이 지나면 위젯(네이티브)이 이 키를 보고 0으로 표시
+      HomeWidget.saveWidgetData(
+          'water_date', DateFormat('yyyy-MM-dd').format(DateTime.now())),
     ]);
     await HomeWidget.updateWidget(androidName: 'HaruWidget');
   }
@@ -38,6 +40,7 @@ Future<void> backgroundCallback(Uri? uri) async {
     final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final total = await db.getTodayWaterTotal(todayKey);
     await HomeWidget.saveWidgetData('water_amount', total);
+    await HomeWidget.saveWidgetData('water_date', todayKey);
     await HomeWidget.updateWidget(androidName: 'HaruWidget');
   }
 }

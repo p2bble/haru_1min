@@ -26,9 +26,13 @@ class HaruWidget : AppWidgetProvider() {
     companion object {
         fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int) {
             val prefs = HomeWidgetPlugin.getData(context)
-            val waterAmount = prefs.getInt("water_amount", 0)
+            val todayKey = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+            val savedDate = prefs.getString("water_date", todayKey)
+            // 자정이 지나 날짜가 바뀌면 어제 수치 대신 0으로 표시 (30분 주기 onUpdate에서 반영)
+            val isToday = savedDate == todayKey
+            val waterAmount = if (isToday) prefs.getInt("water_amount", 0) else 0
             val waterGoal = prefs.getInt("water_goal", 2000)
-            val supplementTaken = prefs.getInt("supplement_taken", 0)
+            val supplementTaken = if (isToday) prefs.getInt("supplement_taken", 0) else 0
             val supplementTotal = prefs.getInt("supplement_total", 0)
             val cupSize = prefs.getInt("cup_size", 250)
 
