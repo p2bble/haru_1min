@@ -16,6 +16,12 @@ class DbHelper {
     return _db!;
   }
 
+  /// DB 연결을 닫는다 (백업 전 WAL 반영, 복원 시 파일 교체용). 다음 접근 시 자동 재오픈.
+  Future<void> close() async {
+    await _db?.close();
+    _db = null;
+  }
+
   Future<Database> _initDb() async {
     final dbPath = await getDatabasesPath();
     return openDatabase(

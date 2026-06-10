@@ -2,7 +2,7 @@ name: haru_1min
 description: "하루 1분 - 물과 영양제를 간편하게 관리하세요"
 publish_to: 'none'
 
-version: 2.0.1+5
+version: 2.1.0+6
 
 environment:
   sdk: ^3.11.4
@@ -37,6 +37,11 @@ dependencies:
 
   # 홈 화면 위젯
   home_widget: ^0.7.0
+
+  # 백업/복원
+  archive: ^4.0.0
+  file_picker: ^8.1.0
+  share_plus: ^10.0.0
 
   # Firebase (Gemini AI 사진 분석, 크래시 리포트)
   firebase_core: ^3.8.0

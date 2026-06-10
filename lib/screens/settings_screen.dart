@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/notification_provider.dart';
+import '../providers/supplement_provider.dart';
 import '../providers/water_provider.dart';
+import '../services/backup_service.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 
@@ -35,6 +37,10 @@ class SettingsScreen extends ConsumerWidget {
           const _WaterNotiCard(),
           const SizedBox(height: 10),
           const _SupplementNotiCard(),
+          const SizedBox(height: 24),
+          _SectionHeader('데이터 관리'),
+          const SizedBox(height: 10),
+          const _BackupCard(),
           const SizedBox(height: 24),
           _SectionHeader('앱 정보'),
           const SizedBox(height: 10),
@@ -116,6 +122,85 @@ class _SettingsCard extends StatelessWidget {
       ),
       child: child,
     );
+  }
+}
+
+// ─── 백업/복원 카드 ──────────────────────────────────────────
+
+class _BackupCard extends ConsumerWidget {
+  const _BackupCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.backup_outlined,
+                color: AppColors.primary, size: 22),
+            title: const Text('백업 만들기',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            subtitle: const Text('기록과 사진을 파일 하나로 내보내요',
+                style: TextStyle(fontSize: 12)),
+            onTap: () async {
+              final err = await BackupService.exportBackup();
+              if (err != null && context.mounted) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(err)));
+              }
+            },
+          ),
+          const Divider(height: 1, indent: 56, endIndent: 16),
+          ListTile(
+            leading:
+                const Icon(Icons.restore, color: AppColors.primary, size: 22),
+            title: const Text('백업에서 복원',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            subtitle: const Text('백업 파일로 기록을 되돌려요',
+                style: TextStyle(fontSize: 12)),
+            onTap: () => _confirmRestore(context, ref),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmRestore(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('백업에서 복원'),
+        content: const Text(
+            '현재 앱의 모든 기록(물·영양제·사진)이 백업 파일의 내용으로 교체됩니다.\n'
+            '설정값(목표량·알림)은 그대로 유지돼요.\n계속할까요?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('취소')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('복원')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    final err = await BackupService.importBackup();
+    if (err == 'cancelled') return;
+    if (err == null) {
+      // 복원된 DB로 상태 재로드
+      ref.invalidate(supplementListProvider);
+      ref.invalidate(takenSupplementIdsProvider);
+      ref.invalidate(waterAmountProvider);
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err ?? '복원이 완료됐어요!')));
+    }
   }
 }
 
