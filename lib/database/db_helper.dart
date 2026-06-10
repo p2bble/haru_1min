@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/supplement.dart';
 import '../models/water_log.dart';
+import '../services/image_store.dart';
 
 class DbHelper {
   static final DbHelper _instance = DbHelper._internal();
@@ -20,6 +21,8 @@ class DbHelper {
     return openDatabase(
       join(dbPath, 'haru1min.db'),
       version: 1,
+      // sqflite는 FK가 기본 OFF — 켜야 supplement_logs CASCADE가 동작한다
+      onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE supplements (
@@ -80,7 +83,13 @@ class DbHelper {
 
   Future<void> deleteSupplement(int id) async {
     final database = await db;
+    final rows = await database.query('supplements',
+        columns: ['imagePath'], where: 'id = ?', whereArgs: [id]);
+    // FK ON 상태이므로 supplement_logs는 CASCADE로 함께 삭제됨
     await database.delete('supplements', where: 'id = ?', whereArgs: [id]);
+    if (rows.isNotEmpty) {
+      await ImageStore.deleteIfExists(rows.first['imagePath'] as String?);
+    }
   }
 
   // --- Supplement Log ---
@@ -159,5 +168,31 @@ class DbHelper {
         whereArgs: [rows.first['id']],
       );
     }
+  }
+
+  // --- 마이그레이션 ---
+
+  /// v1.1.0 이전에 캐시 경로로 저장된 영양제 사진을 앱 문서 폴더로 구출.
+  /// 캐시에서 이미 지워진 사진은 NULL 처리. FK OFF 시절 생긴 고아 로그도 정리.
+  /// 멱등적이므로 앱 시작 시마다 호출해도 안전하다.
+  Future<int> migrateLegacyImages() async {
+    final database = await db;
+    final dirPath = await ImageStore.imagesDirPath();
+    var migrated = 0;
+    final rows = await database.query('supplements',
+        columns: ['id', 'imagePath'], where: 'imagePath IS NOT NULL');
+    for (final row in rows) {
+      final path = row['imagePath'] as String;
+      if (isWithin(dirPath, path)) continue;
+      final newPath = await ImageStore.persistPath(path);
+      await database.update('supplements', {'imagePath': newPath},
+          where: 'id = ?', whereArgs: [row['id']]);
+      migrated++;
+    }
+    await database.delete(
+      'supplement_logs',
+      where: 'supplementId NOT IN (SELECT id FROM supplements)',
+    );
+    return migrated;
   }
 }

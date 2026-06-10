@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/notification_provider.dart';
 import '../providers/water_provider.dart';
 import '../services/notification_service.dart';
@@ -38,11 +39,16 @@ class SettingsScreen extends ConsumerWidget {
           _SectionHeader('앱 정보'),
           const SizedBox(height: 10),
           _SettingsCard(
-            child: const ListTile(
-              title: Text('버전',
+            child: ListTile(
+              title: const Text('버전',
                   style: TextStyle(fontWeight: FontWeight.w600)),
-              trailing: Text('1.0.0',
-                  style: TextStyle(color: AppColors.textSecondary)),
+              trailing: FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (_, snap) => Text(
+                  snap.data?.version ?? '',
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
             ),
           ),
         ],

@@ -37,6 +37,20 @@ class NotificationService {
         false;
   }
 
+  /// Android 14+는 정확 알람(SCHEDULE_EXACT_ALARM)이 기본 거부라
+  /// 그대로 예약하면 PlatformException이 발생한다.
+  /// 리마인더는 분 단위 정밀도가 필요 없으므로 inexact로 폴백한다.
+  static Future<AndroidScheduleMode> _scheduleMode() async {
+    final canExact = await _plugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>()
+            ?.canScheduleExactNotifications() ??
+        false;
+    return canExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+  }
+
   static Future<void> scheduleWater(bool enabled, int hour, int minute) async {
     await _plugin.cancel(_waterNotiId);
     if (!enabled) return;
@@ -54,7 +68,7 @@ class NotificationService {
           priority: Priority.high,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: await _scheduleMode(),
       matchDateTimeComponents: DateTimeComponents.time,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
@@ -80,7 +94,7 @@ class NotificationService {
           priority: Priority.high,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: await _scheduleMode(),
       matchDateTimeComponents: DateTimeComponents.time,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/supplement.dart';
 import '../providers/supplement_provider.dart';
+import '../services/image_store.dart';
 import '../theme/app_theme.dart';
 
 class AddSupplementScreen extends ConsumerStatefulWidget {
@@ -41,9 +42,14 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
     final source = await _showImageSourceDialog();
     if (source == null) return;
 
-    final file = await picker.pickImage(source: source, imageQuality: 80);
+    final file = await picker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      imageQuality: 80,
+    );
     if (file != null) {
-      setState(() => _imagePath = file.path);
+      final saved = await ImageStore.persist(file);
+      setState(() => _imagePath = saved);
     }
   }
 
@@ -91,6 +97,9 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
               mealTime: _selectedMealTime,
             ),
           );
+      if (_imagePath != widget.existing!.imagePath) {
+        await ImageStore.deleteIfExists(widget.existing!.imagePath);
+      }
     } else {
       await ref.read(supplementListProvider.notifier).add(
             Supplement(
