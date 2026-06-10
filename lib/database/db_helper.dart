@@ -170,6 +170,37 @@ class DbHelper {
     }
   }
 
+  // --- 통계 ---
+
+  /// [fromKey]('yyyy-MM-dd') 이후의 일별 물 섭취 합계 (날짜키 → ml)
+  Future<Map<String, int>> getDailyWaterTotals(String fromKey) async {
+    final database = await db;
+    final rows = await database.rawQuery('''
+      SELECT substr(loggedAt, 1, 10) AS day, SUM(amount) AS total
+      FROM water_logs
+      WHERE substr(loggedAt, 1, 10) >= ?
+      GROUP BY day
+    ''', [fromKey]);
+    return {
+      for (final r in rows) r['day'] as String: (r['total'] as int?) ?? 0,
+    };
+  }
+
+  /// [fromKey] 이후의 일별 복용한 영양제 종류 수 (날짜키 → distinct 수)
+  Future<Map<String, int>> getDailySupplementCounts(String fromKey) async {
+    final database = await db;
+    final rows = await database.rawQuery('''
+      SELECT substr(takenAt, 1, 10) AS day,
+             COUNT(DISTINCT supplementId) AS cnt
+      FROM supplement_logs
+      WHERE substr(takenAt, 1, 10) >= ?
+      GROUP BY day
+    ''', [fromKey]);
+    return {
+      for (final r in rows) r['day'] as String: (r['cnt'] as int?) ?? 0,
+    };
+  }
+
   // --- 마이그레이션 ---
 
   /// v1.1.0 이전에 캐시 경로로 저장된 영양제 사진을 앱 문서 폴더로 구출.

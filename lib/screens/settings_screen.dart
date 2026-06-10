@@ -141,18 +141,55 @@ class _WaterNotiCard extends ConsumerWidget {
             enabled: noti.enabled,
             onChanged: (val) => _handleToggle(context, ref, val, noti),
           ),
-          if (noti.enabled)
-            _NotiTimeRow(
-              time: noti.timeOfDay,
-              onTap: () => _pickTime(context, ref, noti),
+          if (noti.enabled) ...[
+            // 모드 선택: 하루 한 번 / 주기적으로
+            Padding(
+              padding: const EdgeInsets.fromLTRB(56, 0, 16, 10),
+              child: Row(
+                children: [
+                  _modeChip(context, ref, noti, label: '하루 한 번', repeat: false),
+                  const SizedBox(width: 8),
+                  _modeChip(context, ref, noti, label: '주기적으로', repeat: true),
+                ],
+              ),
             ),
+            if (!noti.repeat)
+              _NotiTimeRow(
+                time: noti.timeOfDay,
+                onTap: () => _pickOnceTime(context, ref, noti),
+              )
+            else
+              _RepeatSettingRows(noti: noti),
+          ],
         ],
       ),
     );
   }
 
-  Future<void> _handleToggle(
-      BuildContext context, WidgetRef ref, bool val, NotiSetting noti) async {
+  Widget _modeChip(BuildContext context, WidgetRef ref, WaterNotiSetting noti,
+      {required String label, required bool repeat}) {
+    final selected = noti.repeat == repeat;
+    return ChoiceChip(
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      selected: selected,
+      onSelected: (_) => ref
+          .read(notificationProvider.notifier)
+          .updateWater(noti.copyWith(repeat: repeat)),
+      selectedColor: AppColors.primary,
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : AppColors.textSecondary,
+        fontWeight: FontWeight.w600,
+      ),
+      backgroundColor: AppColors.background,
+      side: BorderSide(
+        color: selected ? AppColors.primary : AppColors.notTaken,
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Future<void> _handleToggle(BuildContext context, WidgetRef ref, bool val,
+      WaterNotiSetting noti) async {
     if (val) {
       final granted = await NotificationService.requestPermission();
       if (!granted) {
@@ -169,8 +206,8 @@ class _WaterNotiCard extends ConsumerWidget {
         .updateWater(noti.copyWith(enabled: val));
   }
 
-  Future<void> _pickTime(
-      BuildContext context, WidgetRef ref, NotiSetting noti) async {
+  Future<void> _pickOnceTime(
+      BuildContext context, WidgetRef ref, WaterNotiSetting noti) async {
     final picked =
         await showTimePicker(context: context, initialTime: noti.timeOfDay);
     if (picked != null && context.mounted) {
@@ -178,6 +215,119 @@ class _WaterNotiCard extends ConsumerWidget {
             noti.copyWith(hour: picked.hour, minute: picked.minute),
           );
     }
+  }
+}
+
+/// 반복 모드: 시작·종료 시각 + 간격 선택
+class _RepeatSettingRows extends ConsumerWidget {
+  final WaterNotiSetting noti;
+
+  const _RepeatSettingRows({required this.noti});
+
+  String _hourLabel(int hour) {
+    final period = hour < 12 ? '오전' : '오후';
+    final h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '$period $h시';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(56, 0, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _hourButton(
+                context,
+                label: _hourLabel(noti.startHour),
+                onTap: () => _pickHour(context, ref, isStart: true),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6),
+                child: Text('~',
+                    style: TextStyle(color: AppColors.textSecondary)),
+              ),
+              _hourButton(
+                context,
+                label: _hourLabel(noti.endHour),
+                onTap: () => _pickHour(context, ref, isStart: false),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [1, 2, 3].map((h) {
+              final selected = noti.intervalHours == h;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text('$h시간마다', style: const TextStyle(fontSize: 12)),
+                  selected: selected,
+                  onSelected: (_) => ref
+                      .read(notificationProvider.notifier)
+                      .updateWater(noti.copyWith(intervalHours: h)),
+                  selectedColor: AppColors.primary,
+                  labelStyle: TextStyle(
+                    color: selected ? Colors.white : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  backgroundColor: AppColors.background,
+                  side: BorderSide(
+                    color: selected ? AppColors.primary : AppColors.notTaken,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _hourButton(BuildContext context,
+      {required String label, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickHour(BuildContext context, WidgetRef ref,
+      {required bool isStart}) async {
+    final initial =
+        TimeOfDay(hour: isStart ? noti.startHour : noti.endHour, minute: 0);
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked == null || !context.mounted) return;
+
+    final start = isStart ? picked.hour : noti.startHour;
+    final end = isStart ? noti.endHour : picked.hour;
+    if (end <= start) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('종료 시각은 시작 시각보다 늦어야 해요')),
+      );
+      return;
+    }
+    await ref
+        .read(notificationProvider.notifier)
+        .updateWater(noti.copyWith(startHour: start, endHour: end));
   }
 }
 

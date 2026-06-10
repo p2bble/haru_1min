@@ -23,8 +23,50 @@ class NotiSetting {
   TimeOfDay get timeOfDay => TimeOfDay(hour: hour, minute: minute);
 }
 
+/// 물 알림 설정 — 하루 한 번(repeat=false) 또는 주기 반복(repeat=true)
+class WaterNotiSetting {
+  final bool enabled;
+  final bool repeat;
+  final int hour; // 하루 한 번 모드
+  final int minute;
+  final int startHour; // 반복 모드
+  final int endHour;
+  final int intervalHours;
+
+  const WaterNotiSetting({
+    required this.enabled,
+    this.repeat = false,
+    this.hour = 10,
+    this.minute = 0,
+    this.startHour = 9,
+    this.endHour = 21,
+    this.intervalHours = 2,
+  });
+
+  WaterNotiSetting copyWith({
+    bool? enabled,
+    bool? repeat,
+    int? hour,
+    int? minute,
+    int? startHour,
+    int? endHour,
+    int? intervalHours,
+  }) =>
+      WaterNotiSetting(
+        enabled: enabled ?? this.enabled,
+        repeat: repeat ?? this.repeat,
+        hour: hour ?? this.hour,
+        minute: minute ?? this.minute,
+        startHour: startHour ?? this.startHour,
+        endHour: endHour ?? this.endHour,
+        intervalHours: intervalHours ?? this.intervalHours,
+      );
+
+  TimeOfDay get timeOfDay => TimeOfDay(hour: hour, minute: minute);
+}
+
 class NotificationState {
-  final NotiSetting water;
+  final WaterNotiSetting water;
   final NotiSetting morning;
   final NotiSetting lunch;
   final NotiSetting dinner;
@@ -39,7 +81,7 @@ class NotificationState {
   });
 
   NotificationState copyWith({
-    NotiSetting? water,
+    WaterNotiSetting? water,
     NotiSetting? morning,
     NotiSetting? lunch,
     NotiSetting? dinner,
@@ -69,7 +111,7 @@ final notificationProvider =
 class NotificationNotifier extends StateNotifier<NotificationState> {
   NotificationNotifier()
       : super(const NotificationState(
-          water: NotiSetting(enabled: false, hour: 10, minute: 0),
+          water: WaterNotiSetting(enabled: false),
           morning: NotiSetting(enabled: false, hour: 8, minute: 0),
           lunch: NotiSetting(enabled: false, hour: 12, minute: 0),
           dinner: NotiSetting(enabled: false, hour: 18, minute: 0),
@@ -81,10 +123,14 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> _load() async {
     final p = await SharedPreferences.getInstance();
     state = NotificationState(
-      water: NotiSetting(
+      water: WaterNotiSetting(
         enabled: p.getBool('noti_water_enabled') ?? false,
+        repeat: p.getBool('noti_water_repeat') ?? false,
         hour: p.getInt('noti_water_hour') ?? 10,
         minute: p.getInt('noti_water_minute') ?? 0,
+        startHour: p.getInt('noti_water_start') ?? 9,
+        endHour: p.getInt('noti_water_end') ?? 21,
+        intervalHours: p.getInt('noti_water_interval') ?? 2,
       ),
       morning: NotiSetting(
         enabled: p.getBool('noti_morning_enabled') ?? false,
@@ -109,13 +155,23 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     );
   }
 
-  Future<void> updateWater(NotiSetting noti) async {
+  Future<void> updateWater(WaterNotiSetting noti) async {
     final p = await SharedPreferences.getInstance();
     await p.setBool('noti_water_enabled', noti.enabled);
+    await p.setBool('noti_water_repeat', noti.repeat);
     await p.setInt('noti_water_hour', noti.hour);
     await p.setInt('noti_water_minute', noti.minute);
+    await p.setInt('noti_water_start', noti.startHour);
+    await p.setInt('noti_water_end', noti.endHour);
+    await p.setInt('noti_water_interval', noti.intervalHours);
     state = state.copyWith(water: noti);
-    await NotificationService.scheduleWater(noti.enabled, noti.hour, noti.minute);
+    if (noti.repeat) {
+      await NotificationService.scheduleWaterRepeat(
+          noti.enabled, noti.startHour, noti.endHour, noti.intervalHours);
+    } else {
+      await NotificationService.scheduleWater(
+          noti.enabled, noti.hour, noti.minute);
+    }
   }
 
   Future<void> updateSupplement(String mealTime, NotiSetting noti) async {

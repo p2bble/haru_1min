@@ -6,6 +6,7 @@ class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
 
   static const int _waterNotiId = 0;
+  static const int _waterRepeatBase = 100; // 100 + 시각(0~23)
   static const Map<String, int> _suppIds = {
     'morning': 1,
     'lunch': 2,
@@ -51,11 +52,34 @@ class NotificationService {
         : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
-  static Future<void> scheduleWater(bool enabled, int hour, int minute) async {
+  /// 하루 한 번 모드 (ID 0)와 반복 모드 (ID 100+시각)를 모두 취소
+  static Future<void> _cancelWater() async {
     await _plugin.cancel(_waterNotiId);
+    for (var h = 0; h < 24; h++) {
+      await _plugin.cancel(_waterRepeatBase + h);
+    }
+  }
+
+  /// 하루 한 번 모드
+  static Future<void> scheduleWater(bool enabled, int hour, int minute) async {
+    await _cancelWater();
     if (!enabled) return;
+    await _scheduleDailyWater(_waterNotiId, hour, minute);
+  }
+
+  /// 반복 모드 — 시작~종료 시각 사이를 간격(시간)마다 알림
+  static Future<void> scheduleWaterRepeat(
+      bool enabled, int startHour, int endHour, int intervalHours) async {
+    await _cancelWater();
+    if (!enabled) return;
+    for (var h = startHour; h <= endHour; h += intervalHours) {
+      await _scheduleDailyWater(_waterRepeatBase + h, h, 0);
+    }
+  }
+
+  static Future<void> _scheduleDailyWater(int id, int hour, int minute) async {
     await _plugin.zonedSchedule(
-      _waterNotiId,
+      id,
       '물 마실 시간이에요 💧',
       '오늘 목표를 향해 한 잔 더!',
       _nextDaily(hour, minute),
