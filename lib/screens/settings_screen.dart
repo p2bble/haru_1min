@@ -14,6 +14,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goal = ref.watch(waterGoalProvider);
+    final cupSize = ref.watch(waterCupSizeProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('설정')),
@@ -23,12 +24,28 @@ class SettingsScreen extends ConsumerWidget {
           _SectionHeader('물 섭취 설정'),
           const SizedBox(height: 10),
           _SettingsCard(
-            child: ListTile(
-              title: const Text('하루 목표량',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('현재 ${goal}ml'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showGoalPicker(context, ref, goal),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.flag_outlined,
+                      color: AppColors.primary, size: 22),
+                  title: const Text('하루 목표량',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('현재 ${goal}ml'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showGoalPicker(context, ref, goal),
+                ),
+                const Divider(height: 1, indent: 56, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.local_drink_outlined,
+                      color: AppColors.primary, size: 22),
+                  title: const Text('한 잔 용량',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('현재 ${cupSize}ml — 홈에서도 바꿀 수 있어요'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showCupSizePicker(context, ref, cupSize),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
@@ -62,7 +79,115 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  /// 목표량 시트 — 스테퍼(100ml 단위) + 프리셋 칩, 맞춤 목표 지원
   void _showGoalPicker(BuildContext context, WidgetRef ref, int current) {
+    var value = current;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (_, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('하루 목표량',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _StepperButton(
+                    icon: Icons.remove,
+                    onTap: value > 500
+                        ? () => setSheetState(() => value -= 100)
+                        : null,
+                  ),
+                  SizedBox(
+                    width: 130,
+                    child: Text.rich(
+                      TextSpan(
+                        text: '$value',
+                        style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryDark),
+                        children: const [
+                          TextSpan(
+                            text: ' ml',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  _StepperButton(
+                    icon: Icons.add,
+                    onTap: value < 5000
+                        ? () => setSheetState(() => value += 100)
+                        : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text('100ml 단위로 조절',
+                  style: TextStyle(
+                      fontSize: 11.5, color: AppColors.textSecondary)),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 7,
+                alignment: WrapAlignment.center,
+                children: [1500, 1800, 2000, 2500, 3000].map((ml) {
+                  final on = value == ml;
+                  return ChoiceChip(
+                    label: Text('${(ml / 1000).toStringAsFixed(1)}L'),
+                    selected: on,
+                    onSelected: (_) => setSheetState(() => value = ml),
+                    selectedColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: on ? Colors.white : AppColors.textSecondary,
+                    ),
+                    backgroundColor: AppColors.background,
+                    side: BorderSide(
+                      color: on ? AppColors.primary : AppColors.notTaken,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    showCheckmark: false,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () {
+                  ref.read(waterGoalProvider.notifier).setGoal(value);
+                  Navigator.pop(sheetContext);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  textStyle: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+                child: const Text('저장'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCupSizePicker(BuildContext context, WidgetRef ref, int current) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -72,21 +197,53 @@ class SettingsScreen extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 16),
-          const Text('하루 목표량 선택',
+          const Text('한 잔 용량 선택',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           const SizedBox(height: 8),
-          ...[1500, 1800, 2000, 2500, 3000].map((ml) => ListTile(
+          ...[150, 200, 250, 300, 350, 500].map((ml) => ListTile(
                 title: Text('$ml ml'),
                 trailing: current == ml
                     ? const Icon(Icons.check, color: AppColors.primary)
                     : null,
                 onTap: () {
-                  ref.read(waterGoalProvider.notifier).setGoal(ml);
+                  ref.read(waterCupSizeProvider.notifier).setCupSize(ml);
                   Navigator.pop(context);
                 },
               )),
           const SizedBox(height: 16),
         ],
+      ),
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _StepperButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: onTap != null
+          ? AppColors.primary.withValues(alpha: 0.12)
+          : AppColors.notTaken.withValues(alpha: 0.4),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(
+            icon,
+            size: 20,
+            color: onTap != null
+                ? AppColors.primaryDark
+                : AppColors.textSecondary.withValues(alpha: 0.4),
+          ),
+        ),
       ),
     );
   }
@@ -426,6 +583,9 @@ class _SupplementNotiCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(notificationProvider);
+    // 영양제가 등록된 시간대만 알림 설정 가능 — 없는 시간대는 흐림 처리
+    final usedMealTimes =
+        ref.watch(supplementListProvider).map((s) => s.mealTime).toSet();
     final rows = <Widget>[];
     for (int i = 0; i < _mealTimes.length; i++) {
       if (i > 0) {
@@ -435,6 +595,7 @@ class _SupplementNotiCard extends ConsumerWidget {
       rows.add(_SupplementNotiRow(
         mealTime: mealTime,
         noti: state.supplement(mealTime),
+        hasSupplements: usedMealTimes.contains(mealTime),
       ));
     }
     return Container(
@@ -457,27 +618,85 @@ class _SupplementNotiRow extends ConsumerWidget {
 
   final String mealTime;
   final NotiSetting noti;
+  final bool hasSupplements;
 
-  const _SupplementNotiRow({required this.mealTime, required this.noti});
+  const _SupplementNotiRow({
+    required this.mealTime,
+    required this.noti,
+    required this.hasSupplements,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      children: [
-        _NotiToggleRow(
-          icon: Icons.medication_rounded,
-          iconColor: AppColors.supplement,
-          title: _labels[mealTime]!,
-          enabled: noti.enabled,
-          onChanged: (val) => _handleToggle(context, ref, val),
+    if (!hasSupplements) {
+      return Opacity(
+        opacity: 0.5,
+        child: ListTile(
+          leading: const Icon(Icons.medication_rounded,
+              color: AppColors.supplement, size: 22),
+          title: Text(_labels[mealTime]!,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          subtitle: const Text('이 시간대에 등록된 영양제가 없어요',
+              style: TextStyle(fontSize: 11.5)),
         ),
-        if (noti.enabled)
-          _NotiTimeRow(
-            time: noti.timeOfDay,
-            onTap: () => _pickTime(context, ref),
+      );
+    }
+    return ListTile(
+      leading: const Icon(Icons.medication_rounded,
+          color: AppColors.supplement, size: 22),
+      title: Text(_labels[mealTime]!,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 설정된 시각 칩 상시 노출 — 펼치지 않아도 한눈에
+          if (noti.enabled) ...[
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => _pickTime(context, ref),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.schedule,
+                        size: 13, color: AppColors.primaryDark),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatTime(noti.timeOfDay),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Switch(
+            value: noti.enabled,
+            onChanged: (val) => _handleToggle(context, ref, val),
+            activeThumbColor: AppColors.supplement,
+            activeTrackColor: AppColors.supplement.withValues(alpha: 0.4),
           ),
-      ],
+        ],
+      ),
     );
+  }
+
+  String _formatTime(TimeOfDay time) {
+    final period = time.hour < 12 ? '오전' : '오후';
+    final h = time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
+    return '$period $h:${time.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _handleToggle(

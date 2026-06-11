@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>하루 1분 · UI/UX 개선안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..700,0..1,0" crossorigin="anonymous" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  .msr {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="android-frame.jsx"></script>
+<script type="text/babel" src="parts.jsx"></script>
+<script type="text/babel" src="screens-home.jsx"></script>
+<script type="text/babel" src="screens-a-detail.jsx"></script>
+<script type="text/babel" src="screens-stats-settings.jsx"></script>
+<script type="text/babel" src="screens-add.jsx"></script>
+<script type="text/babel" src="screens-patterns.jsx"></script>
+<script type="text/babel">
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="home" title="① 홈 · A안 확정" subtitle="시간대 그룹핑 — 강조 그룹이 하루 동안 이동 · FAB 제거 · 주간 스트릭">
+        <DCArtboard id="home-a" label="기본 · 아침 시점" width={412} height={892}><HaruHomeA /></DCArtboard>
+        <DCArtboard id="home-a2" label="저녁 시점 — 강조 이동" width={412} height={892}><HaruAEvening /></DCArtboard>
+        <DCArtboard id="home-a3" label="모두 완료" width={412} height={892}><HaruADone /></DCArtboard>
+        <DCArtboard id="home-a4" label="첫 실행 · 빈 상태" width={412} height={892}><HaruAEmpty /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="alt" title="② 참고 · B안 (미채택)" subtitle="그리드 + 시간대 필터 칩">
+        <DCArtboard id="home-b" label="B안 · 그리드 + 필터 칩" width={412} height={892}><HaruHomeB /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="patterns" title="③ 인터랙션 디테일" subtitle="컵 용량 칩 · 카드 ⋯ 메뉴 · 탭 피드백">
+        <DCArtboard id="pat-cup" label="컵 용량 칩 Before/After" width={500} height={250}><HPatCupChip /></DCArtboard>
+        <DCArtboard id="pat-menu" label="카드 ⋯ 메뉴 + 첫 사용 툴팁" width={400} height={365}><HPatCardMenu /></DCArtboard>
+        <DCArtboard id="pat-fb" label="탭 피드백 (InkWell + 햅틱)" width={400} height={310}><HPatFeedback /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="add" title="④ 영양제 추가" subtitle="사진 선택 시 자동 AI 분석 · 인라인 AI 뱃지 · 다중 시간대 · 저장 버튼 하단 고정 하나로">
+        <DCArtboard id="add-1" label="초기 — AI 가치 안내" width={412} height={892}><HaruAddEmpty /></DCArtboard>
+        <DCArtboard id="add-2" label="AI 분석 완료" width={412} height={892}><HaruAddAI /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="stats" title="⑤ 통계" subtitle="주 네비게이션 · 오늘 막대 강조 · 스트릭+최장기록 · 이모지 제거">
+        <DCArtboard id="stats-1" label="통계 개선" width={412} height={892}><HaruStats /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="settings" title="⑥ 설정" subtitle="한 잔 용량 행 추가 · 영양제 알림은 등록된 시간대만 · 목표량 스테퍼">
+        <DCArtboard id="set-1" label="설정 개선" width={412} height={892}><HaruSettings /></DCArtboard>
+        <DCArtboard id="set-2" label="목표량 시트 — 스테퍼" width={400} height={420}><HPatGoalSheet /></DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -26,6 +26,14 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
   String _selectedMealTime = 'morning';
   String? _imagePath;
   bool _isAnalyzing = false;
+  bool _analyzed = false;
+
+  // AI가 채운 필드 추적 — 유저가 값을 바꾸면 뱃지 해제
+  bool _aiName = false;
+  bool _aiTip = false;
+  String? _aiNameValue;
+  String? _aiTipValue;
+  String? _aiMealTime;
 
   @override
   void initState() {
@@ -36,6 +44,16 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
       _selectedMealTime = widget.existing!.mealTime;
       _imagePath = widget.existing!.imagePath;
     }
+    // 저장 버튼 활성화 + AI 뱃지 해제 갱신
+    _nameController.addListener(() {
+      if (_aiName && _nameController.text != _aiNameValue) _aiName = false;
+      setState(() {});
+    });
+    _memoController.addListener(() {
+      if (_aiTip && _memoController.text != _aiTipValue) {
+        setState(() => _aiTip = false);
+      }
+    });
     if (widget.autoPhoto) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _pickImage());
     }
@@ -49,34 +67,34 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
   }
 
   Future<void> _analyzeImage() async {
-    if (_imagePath == null) return;
+    if (_imagePath == null || _isAnalyzing) return;
     setState(() => _isAnalyzing = true);
     final result = await SupplementAiService.analyze(File(_imagePath!));
     if (!mounted) return;
-    setState(() => _isAnalyzing = false);
 
     if (result == null) {
+      setState(() => _isAnalyzing = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('분석에 실패했어요. 네트워크를 확인하고 다시 시도해주세요.')),
       );
       return;
     }
     setState(() {
+      _isAnalyzing = false;
+      _analyzed = true;
       if (result.name != null && result.name!.isNotEmpty) {
+        _aiNameValue = result.name;
         _nameController.text = result.name!;
+        _aiName = true;
       }
       _selectedMealTime = result.mealTime;
+      _aiMealTime = result.mealTime;
       if (result.tip != null && result.tip!.isNotEmpty) {
+        _aiTipValue = result.tip;
         _memoController.text = result.tip!;
+        _aiTip = true;
       }
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            'AI 분석 완료! ${mealTimeLabels[result.mealTime]} 복용을 추천해요.'),
-        duration: const Duration(seconds: 3),
-      ),
-    );
   }
 
   Future<void> _pickImage() async {
@@ -91,7 +109,12 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
     );
     if (file != null) {
       final saved = await ImageStore.persist(file);
-      setState(() => _imagePath = saved);
+      setState(() {
+        _imagePath = saved;
+        _analyzed = false;
+      });
+      // 사진 선택 직후 자동 AI 분석 — 별도 버튼 단계 없음
+      await _analyzeImage();
     }
   }
 
@@ -124,12 +147,7 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
 
   Future<void> _save() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('영양제 이름을 입력해주세요')),
-      );
-      return;
-    }
+    if (name.isEmpty) return;
 
     final memo = _memoController.text.trim();
     if (widget.existing != null) {
@@ -161,95 +179,50 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canSave = _nameController.text.trim().isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.existing != null ? '영양제 수정' : '영양제 추가'),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: const Text('저장', style: TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.w700)),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppColors.supplement.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.supplement.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: _imagePath != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(60),
-                          child: Image.file(File(_imagePath!), fit: BoxFit.cover),
-                        )
-                      : const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.camera_alt_rounded, color: AppColors.supplement, size: 36),
-                            SizedBox(height: 4),
-                            Text('사진 추가', style: TextStyle(color: AppColors.supplement, fontSize: 12)),
-                          ],
-                        ),
-                ),
+            if (_imagePath == null)
+              _PhotoValueCard(onTap: _pickImage)
+            else
+              _PhotoStatusCard(
+                imagePath: _imagePath!,
+                isAnalyzing: _isAnalyzing,
+                analyzed: _analyzed,
+                onChangePhoto: _pickImage,
+                onReanalyze: _analyzeImage,
               ),
-            ),
-            if (_imagePath != null) ...[
-              const SizedBox(height: 12),
-              Center(
-                child: OutlinedButton.icon(
-                  onPressed: _isAnalyzing ? null : _analyzeImage,
-                  icon: _isAnalyzing
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.auto_awesome, size: 16),
-                  label: Text(_isAnalyzing ? '분석 중...' : 'AI로 자동 분석'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.supplementDark,
-                    side: const BorderSide(color: AppColors.supplement),
-                  ),
-                ),
-              ),
-            ],
             const SizedBox(height: 28),
             const Text('영양제 이름', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                hintText: '예: 비타민C, 오메가3',
-                filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            const SizedBox(height: 12),
+            _AiTaggedField(
+              showBadge: _aiName,
+              child: TextField(
+                controller: _nameController,
+                enabled: !_isAnalyzing,
+                decoration: _fieldDecoration(
+                  hint: '예: 비타민C, 오메가3',
+                  aiFilled: _aiName,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
             const SizedBox(height: 24),
             const Text('복용 시간', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Wrap(
               spacing: 10,
+              runSpacing: 14,
               children: mealTimeLabels.entries.map((e) {
                 final selected = _selectedMealTime == e.key;
-                return ChoiceChip(
+                final chip = ChoiceChip(
                   label: Text(e.value),
                   selected: selected,
                   onSelected: (_) => setState(() => _selectedMealTime = e.key),
@@ -263,45 +236,346 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
                     color: selected ? AppColors.supplement : AppColors.notTaken,
                   ),
                 );
+                if (_aiMealTime != e.key) return chip;
+                // AI 추천 시간대 마커
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    chip,
+                    Positioned(
+                      top: -8,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.supplementDark,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'AI 추천',
+                            style: TextStyle(
+                                color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
               }).toList(),
             ),
             const SizedBox(height: 24),
             const Text('복용 팁 (선택)',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _memoController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                hintText: 'AI 분석 시 자동으로 채워져요',
-                filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            const SizedBox(height: 12),
+            _AiTaggedField(
+              showBadge: _aiTip,
+              child: TextField(
+                controller: _memoController,
+                maxLines: 2,
+                enabled: !_isAnalyzing,
+                decoration: _fieldDecoration(
+                  hint: 'AI 분석 시 자동으로 채워져요',
+                  aiFilled: _aiTip,
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.supplement,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
-                ),
-                child: const Text('저장하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-              ),
-            ),
+            const SizedBox(height: 20),
           ],
+        ),
+      ),
+      // 저장 버튼 단일화 — 하단 고정, 이름 없으면 비활성
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 10),
+          decoration: const BoxDecoration(
+            color: AppColors.background,
+            border: Border(top: BorderSide(color: Color(0xFFE5E9F0))),
+          ),
+          child: FilledButton(
+            onPressed: canSave && !_isAnalyzing ? _save : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.supplement,
+              disabledBackgroundColor: AppColors.notTaken,
+              foregroundColor: Colors.white,
+              disabledForegroundColor: AppColors.textSecondary.withValues(alpha: 0.6),
+              minimumSize: const Size.fromHeight(52),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              textStyle: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+            ),
+            child: const Text('저장하기'),
+          ),
         ),
       ),
     );
   }
+
+  InputDecoration _fieldDecoration({required String hint, required bool aiFilled}) {
+    final aiBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: AppColors.supplement, width: 1.5),
+    );
+    final plainBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide.none,
+    );
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: AppColors.surface,
+      border: plainBorder,
+      enabledBorder: aiFilled ? aiBorder : plainBorder,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+}
+
+/// AI가 채운 필드 위에 붙는 "AI 입력" 뱃지 래퍼
+class _AiTaggedField extends StatelessWidget {
+  final bool showBadge;
+  final Widget child;
+
+  const _AiTaggedField({required this.showBadge, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showBadge) return child;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        child,
+        Positioned(
+          top: -9,
+          right: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.supplementDark,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome, size: 11, color: Colors.white),
+                SizedBox(width: 3),
+                Text(
+                  'AI 입력',
+                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 사진 없을 때 — AI 가치를 설명하는 점선 카드
+class _PhotoValueCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PhotoValueCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _DashedRRectPainter(
+        color: AppColors.supplement.withValues(alpha: 0.4),
+        radius: 18,
+      ),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
+            child: Column(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.supplement.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.photo_camera,
+                      color: AppColors.supplementDark, size: 30),
+                ),
+                const SizedBox(height: 13),
+                const Text(
+                  '사진을 찍어보세요',
+                  style: TextStyle(
+                      fontSize: 14.5, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  '통 사진 한 장이면 AI가 이름·복용 시간·팁을\n자동으로 채워줘요',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.55),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 사진 등록 후 — 분석 상태 카드 (분석 중 / 완료 / 등록됨 + 다시 분석)
+class _PhotoStatusCard extends StatelessWidget {
+  final String imagePath;
+  final bool isAnalyzing;
+  final bool analyzed;
+  final VoidCallback onChangePhoto;
+  final VoidCallback onReanalyze;
+
+  const _PhotoStatusCard({
+    required this.imagePath,
+    required this.isAnalyzing,
+    required this.analyzed,
+    required this.onChangePhoto,
+    required this.onReanalyze,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            customBorder: const CircleBorder(),
+            onTap: isAnalyzing ? null : onChangePhoto,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipOval(
+                  child: Image.file(
+                    File(imagePath),
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.photo_camera,
+                        size: 13, color: AppColors.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (isAnalyzing)
+                      const SizedBox(
+                        width: 13,
+                        height: 13,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.supplementDark),
+                      )
+                    else
+                      Icon(
+                        analyzed ? Icons.auto_awesome : Icons.photo_camera,
+                        size: 15,
+                        color: AppColors.supplementDark,
+                      ),
+                    const SizedBox(width: 5),
+                    Text(
+                      isAnalyzing
+                          ? 'AI 분석 중...'
+                          : analyzed
+                              ? 'AI 분석 완료'
+                              : '사진 등록됨',
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.supplementDark,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  isAnalyzing ? '이름·복용 시간·팁을 채우고 있어요' : '사진을 바꾸면 다시 분석해요',
+                  style: const TextStyle(
+                      fontSize: 11.5, color: AppColors.textSecondary, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: isAnalyzing ? null : onReanalyze,
+            child: const Text(
+              '다시 분석',
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashedRRectPainter extends CustomPainter {
+  final Color color;
+  final double radius;
+
+  const _DashedRRectPainter({required this.color, required this.radius});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(0.75, 0.75, size.width - 1.5, size.height - 1.5),
+        Radius.circular(radius),
+      ));
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        canvas.drawPath(metric.extractPath(distance, distance + 6), paint);
+        distance += 11;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRectPainter old) =>
+      old.color != color || old.radius != radius;
 }
