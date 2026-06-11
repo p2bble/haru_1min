@@ -11,7 +11,10 @@ import '../theme/app_theme.dart';
 class AddSupplementScreen extends ConsumerStatefulWidget {
   final Supplement? existing;
 
-  const AddSupplementScreen({super.key, this.existing});
+  /// 빈 상태 "사진으로 등록" CTA에서 진입 시 사진 선택부터 시작
+  final bool autoPhoto;
+
+  const AddSupplementScreen({super.key, this.existing, this.autoPhoto = false});
 
   @override
   ConsumerState<AddSupplementScreen> createState() => _AddSupplementScreenState();
@@ -32,6 +35,9 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
       _memoController.text = widget.existing!.memo ?? '';
       _selectedMealTime = widget.existing!.mealTime;
       _imagePath = widget.existing!.imagePath;
+    }
+    if (widget.autoPhoto) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _pickImage());
     }
   }
 

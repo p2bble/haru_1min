@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import '../providers/water_provider.dart';
@@ -124,6 +125,77 @@ class WaterTrackerWidget extends ConsumerWidget {
   }
 }
 
+/// 기록 직후 버튼 위로 떠오르며 사라지는 피드백 텍스트 (+250ml)
+void _showFloatingLabel(BuildContext context, String text) {
+  final overlay = Overlay.of(context);
+  final box = context.findRenderObject();
+  if (box is! RenderBox || !box.attached) return;
+  final pos = box.localToGlobal(Offset.zero);
+  late OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (_) => Positioned(
+      left: pos.dx,
+      top: pos.dy - 34,
+      width: box.size.width,
+      child: IgnorePointer(
+        child: _FloatingLabel(text: text, onDone: () => entry.remove()),
+      ),
+    ),
+  );
+  overlay.insert(entry);
+}
+
+class _FloatingLabel extends StatefulWidget {
+  final String text;
+  final VoidCallback onDone;
+
+  const _FloatingLabel({required this.text, required this.onDone});
+
+  @override
+  State<_FloatingLabel> createState() => _FloatingLabelState();
+}
+
+class _FloatingLabelState extends State<_FloatingLabel>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 450),
+  )
+    ..forward().whenComplete(widget.onDone);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, _) => Transform.translate(
+        offset: Offset(0, -26 * _controller.value),
+        child: Opacity(
+          opacity: 1 - Curves.easeIn.transform(_controller.value),
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: Text(
+                widget.text,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _WaterButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -139,28 +211,33 @@ class _WaterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+          _showFloatingLabel(context, label);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -174,18 +251,22 @@ class _UndoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.textSecondary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: const Icon(
-          Icons.undo,
-          color: AppColors.textSecondary,
-          size: 20,
+    return Material(
+      color: AppColors.textSecondary.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: const Padding(
+          padding: EdgeInsets.all(14),
+          child: Icon(
+            Icons.undo,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
         ),
       ),
     );
@@ -200,20 +281,32 @@ class _CupSizeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showSelector(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          '${cupSize}ml',
-          style: const TextStyle(
-            color: AppColors.primaryDark,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
+    return Material(
+      color: AppColors.primary.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => _showSelector(context),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 9, 10, 9),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '한 잔 ${cupSize}ml',
+                style: const TextStyle(
+                  color: AppColors.primaryDark,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(
+                Icons.keyboard_arrow_down,
+                size: 16,
+                color: AppColors.primaryDark,
+              ),
+            ],
           ),
         ),
       ),
