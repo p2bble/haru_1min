@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -32,28 +34,57 @@ final waterAmountProvider = StateNotifierProvider<WaterAmountNotifier, int>((ref
 class WaterAmountNotifier extends StateNotifier<int> {
   WaterAmountNotifier() : super(0) {
     loadToday();
+    _scheduleMidnightReload();
   }
 
   final _db = DbHelper();
 
+  /// 현재 state가 가리키는 날짜('yyyy-MM-dd'). 자정을 넘겼는지 판단하는 기준.
+  String? _loadedDate;
+  Timer? _midnightTimer;
+
   String get _todayKey => DateFormat('yyyy-MM-dd').format(DateTime.now());
 
+  /// 다음 자정에 오늘 합계를 0부터 다시 로드하도록 예약.
+  /// 앱을 켜둔 채 날짜가 바뀌면 어제 값이 그대로 남는 문제를 막는다.
+  void _scheduleMidnightReload() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    _midnightTimer = Timer(nextMidnight.difference(now), () {
+      loadToday();
+      _scheduleMidnightReload();
+    });
+  }
+
   Future<void> loadToday() async {
-    state = await _db.getTodayWaterTotal(_todayKey);
+    _loadedDate = _todayKey;
+    state = await _db.getTodayWaterTotal(_loadedDate!);
   }
 
   Future<void> add(int ml) async {
     await _db.logWater(ml);
-    state = state + ml;
+    if (_todayKey != _loadedDate) {
+      // 자정을 넘김 — 어제 누적값에 더하지 않고 새 날짜 합계로 다시 로드
+      await loadToday();
+    } else {
+      state = state + ml;
+    }
   }
 
   Future<void> undoLast() async {
     await _db.deleteLastWaterLog(_todayKey);
-    state = await _db.getTodayWaterTotal(_todayKey);
+    await loadToday();
   }
 
   Future<List<WaterLog>> getTodayLogs() async {
     return _db.getWaterLogs(_todayKey);
+  }
+
+  @override
+  void dispose() {
+    _midnightTimer?.cancel();
+    super.dispose();
   }
 }
 

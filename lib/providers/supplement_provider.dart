@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../database/db_helper.dart';
@@ -43,24 +45,52 @@ final takenSupplementIdsProvider =
 class TakenSupplementIdsNotifier extends StateNotifier<Set<int>> {
   TakenSupplementIdsNotifier() : super({}) {
     loadToday();
+    _scheduleMidnightReload();
   }
 
   final _db = DbHelper();
 
+  /// 현재 state가 가리키는 날짜('yyyy-MM-dd'). 자정을 넘겼는지 판단하는 기준.
+  String? _loadedDate;
+  Timer? _midnightTimer;
+
   String get _todayKey => DateFormat('yyyy-MM-dd').format(DateTime.now());
 
+  /// 다음 자정에 복용 체크 상태를 새 날짜 기준으로 다시 로드하도록 예약.
+  void _scheduleMidnightReload() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    _midnightTimer = Timer(nextMidnight.difference(now), () {
+      loadToday();
+      _scheduleMidnightReload();
+    });
+  }
+
   Future<void> loadToday() async {
-    final ids = await _db.getTakenSupplementIds(_todayKey);
+    _loadedDate = _todayKey;
+    final ids = await _db.getTakenSupplementIds(_loadedDate!);
     state = ids.toSet();
   }
 
   Future<void> toggle(int supplementId) async {
+    final today = _todayKey;
+    if (today != _loadedDate) {
+      // 자정을 넘김 — 새 날짜 기준으로 다시 로드한 뒤 처리
+      await loadToday();
+    }
     if (state.contains(supplementId)) {
-      await _db.removeSupplementLog(supplementId, _todayKey);
+      await _db.removeSupplementLog(supplementId, today);
       state = {...state}..remove(supplementId);
     } else {
       await _db.logSupplement(supplementId);
       state = {...state, supplementId};
     }
+  }
+
+  @override
+  void dispose() {
+    _midnightTimer?.cancel();
+    super.dispose();
   }
 }
