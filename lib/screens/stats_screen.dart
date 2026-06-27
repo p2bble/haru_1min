@@ -171,31 +171,36 @@ class _WeekNavigator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
           onPressed: onPrev,
-          icon: const Icon(Icons.chevron_left, size: 22, color: AppColors.textSecondary),
+          icon: Icon(Icons.chevron_left, size: 22, color: c.textSecondary),
           visualDensity: VisualDensity.compact,
         ),
         Text(
           '${labelFmt.format(week.first)} ~ ${labelFmt.format(week.last)}',
-          style: const TextStyle(
-              fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: c.textPrimary),
         ),
         if (isCurrentWeek) ...[
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
+              color: c.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
+            child: Text(
               '이번 주',
               style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: c.primaryDark),
             ),
           ),
         ],
@@ -204,9 +209,7 @@ class _WeekNavigator extends StatelessWidget {
           icon: Icon(
             Icons.chevron_right,
             size: 22,
-            color: onNext != null
-                ? AppColors.textSecondary
-                : AppColors.notTaken,
+            color: onNext != null ? c.textSecondary : c.notTaken,
           ),
           visualDensity: VisualDensity.compact,
         ),
@@ -237,25 +240,26 @@ class _WaterStatsCard extends StatelessWidget {
     final amounts = week.map(amountOf).toList();
     final weekTotal = amounts.fold(0, (a, b) => a + b);
     final achievedDays = amounts.where((a) => a >= goal).length;
+    final c = context.c;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.water_drop, color: AppColors.primary, size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.water_drop, color: c.primary, size: 20),
+              const SizedBox(width: 8),
               Text('주간 물 섭취',
                   style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
+                      color: c.textPrimary)),
             ],
           ),
           const SizedBox(height: 20),
@@ -309,6 +313,7 @@ class _WeekBarChart extends StatelessWidget {
     // 목표선이 항상 차트 안에 들어오도록 최대값을 잡는다
     final maxValue = (maxAmount > goal ? maxAmount : goal) * 1.15;
     final goalFraction = goal / maxValue;
+    final c = context.c;
 
     return Column(
       children: [
@@ -327,17 +332,17 @@ class _WeekBarChart extends StatelessWidget {
                       child: CustomPaint(
                         size: const Size(double.infinity, 1.5),
                         painter: _DashedLinePainter(
-                          color: AppColors.primaryDark.withValues(alpha: 0.4),
+                          color: c.primaryDark.withValues(alpha: 0.4),
                         ),
                       ),
                     ),
                     const SizedBox(width: 5),
                     Text(
                       '목표 ${(goal / 1000).toStringAsFixed(1)}L',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primaryDark),
+                          color: c.primaryDark),
                     ),
                   ],
                 ),
@@ -359,10 +364,10 @@ class _WeekBarChart extends StatelessWidget {
                           if (isToday && amounts[i] > 0) ...[
                             Text(
                               '${(amounts[i] / 1000).toStringAsFixed(1)}L',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.primaryDark,
+                                color: c.primaryDark,
                               ),
                             ),
                             const SizedBox(height: 3),
@@ -371,13 +376,13 @@ class _WeekBarChart extends StatelessWidget {
                             height: (_chartHeight - 18) * fraction,
                             decoration: BoxDecoration(
                               color: achieved
-                                  ? AppColors.primary
-                                  : AppColors.primary.withValues(alpha: 0.35),
+                                  ? c.primary
+                                  : c.primary.withValues(alpha: 0.35),
                               borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(4)),
                               border: isToday
                                   ? Border.all(
-                                      color: AppColors.primaryDark, width: 2)
+                                      color: c.primaryDark, width: 2)
                                   : null,
                             ),
                           ),
@@ -401,9 +406,7 @@ class _WeekBarChart extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: isToday ? FontWeight.w800 : FontWeight.w400,
-                  color: isToday
-                      ? AppColors.primaryDark
-                      : AppColors.textSecondary,
+                  color: isToday ? c.primaryDark : c.textSecondary,
                 ),
               ),
             );
@@ -459,34 +462,33 @@ class _SupplementStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.medication_rounded,
-                  color: AppColors.supplement, size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.medication_rounded, color: c.supplement, size: 20),
+              const SizedBox(width: 8),
               Text('영양제 복용',
                   style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
+                      color: c.textPrimary)),
             ],
           ),
           const SizedBox(height: 16),
           if (!hasSupplements)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text('영양제를 등록하면 복용 통계가 표시돼요',
-                  style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 13)),
+                  style: TextStyle(color: c.textSecondary, fontSize: 13)),
             )
           else ...[
             // 스트릭 + 최장 기록
@@ -498,7 +500,7 @@ class _SupplementStatsCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.supplement.withValues(alpha: 0.12),
+                      color: c.supplement.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -511,18 +513,17 @@ class _SupplementStatsCard extends StatelessWidget {
                           children: [
                             Text(
                               '$streak일 연속',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.supplementDark,
+                                color: c.supplementDark,
                               ),
                             ),
                             Text(
                               streak > 0 ? '복용 중' : '오늘 시작해보세요',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.supplementDark
-                                    .withValues(alpha: 0.75),
+                                color: c.supplementDark.withValues(alpha: 0.75),
                               ),
                             ),
                           ],
@@ -538,22 +539,22 @@ class _SupplementStatsCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: c.background,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('최장 기록',
+                        Text('최장 기록',
                             style: TextStyle(
-                                fontSize: 11, color: AppColors.textSecondary)),
+                                fontSize: 11, color: c.textSecondary)),
                         const SizedBox(height: 2),
                         Text(
                           '$longestStreak일',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary),
+                              color: c.textPrimary),
                         ),
                       ],
                     ),
@@ -574,11 +575,11 @@ class _SupplementStatsCard extends StatelessWidget {
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: done ? AppColors.taken : Colors.transparent,
+                          color: done ? c.taken : Colors.transparent,
                           shape: BoxShape.circle,
                           border: done
                               ? null
-                              : Border.all(color: AppColors.notTaken, width: 2),
+                              : Border.all(color: c.notTaken, width: 2),
                         ),
                         child: done
                             ? const Icon(Icons.check,
@@ -592,9 +593,7 @@ class _SupplementStatsCard extends StatelessWidget {
                           fontSize: 11,
                           fontWeight:
                               isToday ? FontWeight.w800 : FontWeight.w400,
-                          color: isToday
-                              ? AppColors.supplementDark
-                              : AppColors.textSecondary,
+                          color: isToday ? c.supplementDark : c.textSecondary,
                         ),
                       ),
                     ],
@@ -619,18 +618,18 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return Expanded(
       child: Column(
         children: [
           Text(label,
-              style: const TextStyle(
-                  fontSize: 11, color: AppColors.textSecondary)),
+              style: TextStyle(fontSize: 11, color: c.textSecondary)),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
+                  color: c.textPrimary)),
         ],
       ),
     );

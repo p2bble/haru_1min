@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/notification_provider.dart';
 import '../providers/supplement_provider.dart';
+import '../providers/theme_provider.dart';
 import '../providers/water_provider.dart';
 import '../services/backup_service.dart';
 import '../services/notification_service.dart';
@@ -15,6 +16,14 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final goal = ref.watch(waterGoalProvider);
     final cupSize = ref.watch(waterCupSizeProvider);
+    final themeMode = ref.watch(themeModeProvider);
+    final c = context.c;
+
+    final themeModeLabel = switch (themeMode) {
+      ThemeMode.light => '라이트',
+      ThemeMode.dark => '다크',
+      _ => '시스템 기본',
+    };
 
     return Scaffold(
       appBar: AppBar(title: const Text('설정')),
@@ -27,8 +36,7 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.flag_outlined,
-                      color: AppColors.primary, size: 22),
+                  leading: Icon(Icons.flag_outlined, color: c.primary, size: 22),
                   title: const Text('하루 목표량',
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text('현재 ${goal}ml'),
@@ -37,8 +45,8 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const Divider(height: 1, indent: 56, endIndent: 16),
                 ListTile(
-                  leading: const Icon(Icons.local_drink_outlined,
-                      color: AppColors.primary, size: 22),
+                  leading:
+                      Icon(Icons.local_drink_outlined, color: c.primary, size: 22),
                   title: const Text('한 잔 용량',
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text('현재 ${cupSize}ml — 홈에서도 바꿀 수 있어요'),
@@ -55,6 +63,20 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 10),
           const _SupplementNotiCard(),
           const SizedBox(height: 24),
+          _SectionHeader('화면'),
+          const SizedBox(height: 10),
+          _SettingsCard(
+            child: ListTile(
+              leading:
+                  Icon(Icons.brightness_6_outlined, color: c.primary, size: 22),
+              title: const Text('화면 테마',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(themeModeLabel),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showThemePicker(context, ref, themeMode),
+            ),
+          ),
+          const SizedBox(height: 24),
           _SectionHeader('데이터 관리'),
           const SizedBox(height: 10),
           const _BackupCard(),
@@ -69,12 +91,55 @@ class SettingsScreen extends ConsumerWidget {
                 future: PackageInfo.fromPlatform(),
                 builder: (_, snap) => Text(
                   snap.data?.version ?? '',
-                  style: const TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: context.c.textSecondary),
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ─── 테마 선택 다이얼로그 ──────────────────────────────────────
+  void _showThemePicker(
+      BuildContext context, WidgetRef ref, ThemeMode current) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('화면 테마'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ThemeOption(
+              label: '시스템 기본',
+              mode: ThemeMode.system,
+              current: current,
+              onTap: () {
+                ref.read(themeModeProvider.notifier).setMode(ThemeMode.system);
+                Navigator.pop(ctx);
+              },
+            ),
+            _ThemeOption(
+              label: '라이트',
+              mode: ThemeMode.light,
+              current: current,
+              onTap: () {
+                ref.read(themeModeProvider.notifier).setMode(ThemeMode.light);
+                Navigator.pop(ctx);
+              },
+            ),
+            _ThemeOption(
+              label: '다크',
+              mode: ThemeMode.dark,
+              current: current,
+              onTap: () {
+                ref.read(themeModeProvider.notifier).setMode(ThemeMode.dark);
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -88,13 +153,14 @@ class SettingsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) => StatefulBuilder(
-        builder: (_, setSheetState) => Padding(
+        builder: (ctx, setSheetState) => Padding(
           padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('하루 목표량',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800, fontSize: 15.5)),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -110,17 +176,17 @@ class SettingsScreen extends ConsumerWidget {
                     child: Text.rich(
                       TextSpan(
                         text: '$value',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.primaryDark),
-                        children: const [
+                            color: ctx.c.primaryDark),
+                        children: [
                           TextSpan(
                             text: ' ml',
                             style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w400,
-                                color: AppColors.textSecondary),
+                                color: ctx.c.textSecondary),
                           ),
                         ],
                       ),
@@ -136,9 +202,9 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              const Text('100ml 단위로 조절',
+              Text('100ml 단위로 조절',
                   style: TextStyle(
-                      fontSize: 11.5, color: AppColors.textSecondary)),
+                      fontSize: 11.5, color: ctx.c.textSecondary)),
               const SizedBox(height: 14),
               Wrap(
                 spacing: 7,
@@ -149,15 +215,15 @@ class SettingsScreen extends ConsumerWidget {
                     label: Text('${(ml / 1000).toStringAsFixed(1)}L'),
                     selected: on,
                     onSelected: (_) => setSheetState(() => value = ml),
-                    selectedColor: AppColors.primary,
+                    selectedColor: ctx.c.primary,
                     labelStyle: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
-                      color: on ? Colors.white : AppColors.textSecondary,
+                      color: on ? Colors.white : ctx.c.textSecondary,
                     ),
-                    backgroundColor: AppColors.background,
+                    backgroundColor: ctx.c.background,
                     side: BorderSide(
-                      color: on ? AppColors.primary : AppColors.notTaken,
+                      color: on ? ctx.c.primary : ctx.c.notTaken,
                     ),
                     visualDensity: VisualDensity.compact,
                     showCheckmark: false,
@@ -171,7 +237,7 @@ class SettingsScreen extends ConsumerWidget {
                   Navigator.pop(sheetContext);
                 },
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: ctx.c.primary,
                   minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
@@ -193,7 +259,7 @@ class SettingsScreen extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Column(
+      builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 16),
@@ -203,7 +269,7 @@ class SettingsScreen extends ConsumerWidget {
           ...[150, 200, 250, 300, 350, 500].map((ml) => ListTile(
                 title: Text('$ml ml'),
                 trailing: current == ml
-                    ? const Icon(Icons.check, color: AppColors.primary)
+                    ? Icon(Icons.check, color: ctx.c.primary)
                     : null,
                 onTap: () {
                   ref.read(waterCupSizeProvider.notifier).setCupSize(ml);
@@ -217,6 +283,37 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
+// ─── 테마 선택 옵션 행 ────────────────────────────────────────
+
+class _ThemeOption extends StatelessWidget {
+  final String label;
+  final ThemeMode mode;
+  final ThemeMode current;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.label,
+    required this.mode,
+    required this.current,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = current == mode;
+    return ListTile(
+      title: Text(label),
+      trailing: selected
+          ? Icon(Icons.check_circle, color: context.c.primary)
+          : null,
+      onTap: onTap,
+      contentPadding: EdgeInsets.zero,
+    );
+  }
+}
+
+// ─── 스테퍼 버튼 ─────────────────────────────────────────────
+
 class _StepperButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
@@ -225,10 +322,11 @@ class _StepperButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return Material(
       color: onTap != null
-          ? AppColors.primary.withValues(alpha: 0.12)
-          : AppColors.notTaken.withValues(alpha: 0.4),
+          ? c.primary.withValues(alpha: 0.12)
+          : c.notTaken.withValues(alpha: 0.4),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -240,8 +338,8 @@ class _StepperButton extends StatelessWidget {
             icon,
             size: 20,
             color: onTap != null
-                ? AppColors.primaryDark
-                : AppColors.textSecondary.withValues(alpha: 0.4),
+                ? c.primaryDark
+                : c.textSecondary.withValues(alpha: 0.4),
           ),
         ),
       ),
@@ -257,10 +355,10 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontWeight: FontWeight.w700,
         fontSize: 14,
-        color: AppColors.textSecondary,
+        color: context.c.textSecondary,
       ),
     );
   }
@@ -274,7 +372,7 @@ class _SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: child,
@@ -289,16 +387,16 @@ class _BackupCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         children: [
           ListTile(
-            leading: const Icon(Icons.backup_outlined,
-                color: AppColors.primary, size: 22),
+            leading: Icon(Icons.backup_outlined, color: c.primary, size: 22),
             title: const Text('백업 만들기',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
             subtitle: const Text('기록과 사진을 파일 하나로 내보내요',
@@ -313,8 +411,7 @@ class _BackupCard extends ConsumerWidget {
           ),
           const Divider(height: 1, indent: 56, endIndent: 16),
           ListTile(
-            leading:
-                const Icon(Icons.restore, color: AppColors.primary, size: 22),
+            leading: Icon(Icons.restore, color: c.primary, size: 22),
             title: const Text('백업에서 복원',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
             subtitle: const Text('백업 파일로 기록을 되돌려요',
@@ -369,16 +466,17 @@ class _WaterNotiCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final noti = ref.watch(notificationProvider).water;
+    final c = context.c;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         children: [
           _NotiToggleRow(
             icon: Icons.water_drop,
-            iconColor: AppColors.primary,
+            iconColor: c.primary,
             title: '물 마시기 알림',
             enabled: noti.enabled,
             onChanged: (val) => _handleToggle(context, ref, val, noti),
@@ -389,9 +487,11 @@ class _WaterNotiCard extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(56, 0, 16, 10),
               child: Row(
                 children: [
-                  _modeChip(context, ref, noti, label: '하루 한 번', repeat: false),
+                  _modeChip(context, ref, noti,
+                      label: '하루 한 번', repeat: false),
                   const SizedBox(width: 8),
-                  _modeChip(context, ref, noti, label: '주기적으로', repeat: true),
+                  _modeChip(context, ref, noti,
+                      label: '주기적으로', repeat: true),
                 ],
               ),
             ),
@@ -411,20 +511,21 @@ class _WaterNotiCard extends ConsumerWidget {
   Widget _modeChip(BuildContext context, WidgetRef ref, WaterNotiSetting noti,
       {required String label, required bool repeat}) {
     final selected = noti.repeat == repeat;
+    final c = context.c;
     return ChoiceChip(
       label: Text(label, style: const TextStyle(fontSize: 12)),
       selected: selected,
       onSelected: (_) => ref
           .read(notificationProvider.notifier)
           .updateWater(noti.copyWith(repeat: repeat)),
-      selectedColor: AppColors.primary,
+      selectedColor: c.primary,
       labelStyle: TextStyle(
-        color: selected ? Colors.white : AppColors.textSecondary,
+        color: selected ? Colors.white : c.textSecondary,
         fontWeight: FontWeight.w600,
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       side: BorderSide(
-        color: selected ? AppColors.primary : AppColors.notTaken,
+        color: selected ? c.primary : c.notTaken,
       ),
       visualDensity: VisualDensity.compact,
     );
@@ -474,6 +575,7 @@ class _RepeatSettingRows extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     return Padding(
       padding: const EdgeInsets.fromLTRB(56, 0, 16, 14),
       child: Column(
@@ -486,10 +588,10 @@ class _RepeatSettingRows extends ConsumerWidget {
                 label: _hourLabel(noti.startHour),
                 onTap: () => _pickHour(context, ref, isStart: true),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Text('~',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                    style: TextStyle(color: c.textSecondary)),
               ),
               _hourButton(
                 context,
@@ -505,19 +607,20 @@ class _RepeatSettingRows extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ChoiceChip(
-                  label: Text('$h시간마다', style: const TextStyle(fontSize: 12)),
+                  label:
+                      Text('$h시간마다', style: const TextStyle(fontSize: 12)),
                   selected: selected,
                   onSelected: (_) => ref
                       .read(notificationProvider.notifier)
                       .updateWater(noti.copyWith(intervalHours: h)),
-                  selectedColor: AppColors.primary,
+                  selectedColor: c.primary,
                   labelStyle: TextStyle(
-                    color: selected ? Colors.white : AppColors.textSecondary,
+                    color: selected ? Colors.white : c.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
-                  backgroundColor: AppColors.background,
+                  backgroundColor: c.background,
                   side: BorderSide(
-                    color: selected ? AppColors.primary : AppColors.notTaken,
+                    color: selected ? c.primary : c.notTaken,
                   ),
                   visualDensity: VisualDensity.compact,
                 ),
@@ -531,19 +634,20 @@ class _RepeatSettingRows extends ConsumerWidget {
 
   Widget _hourButton(BuildContext context,
       {required String label, required VoidCallback onTap}) {
+    final c = context.c;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: c.background,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: AppColors.primaryDark,
+          style: TextStyle(
+            color: c.primaryDark,
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
@@ -556,7 +660,8 @@ class _RepeatSettingRows extends ConsumerWidget {
       {required bool isStart}) async {
     final initial =
         TimeOfDay(hour: isStart ? noti.startHour : noti.endHour, minute: 0);
-    final picked = await showTimePicker(context: context, initialTime: initial);
+    final picked =
+        await showTimePicker(context: context, initialTime: initial);
     if (picked == null || !context.mounted) return;
 
     final start = isStart ? picked.hour : noti.startHour;
@@ -600,7 +705,7 @@ class _SupplementNotiCard extends ConsumerWidget {
     }
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(children: rows),
@@ -628,12 +733,12 @@ class _SupplementNotiRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     if (!hasSupplements) {
       return Opacity(
         opacity: 0.5,
         child: ListTile(
-          leading: const Icon(Icons.medication_rounded,
-              color: AppColors.supplement, size: 22),
+          leading: Icon(Icons.medication_rounded, color: c.supplement, size: 22),
           title: Text(_labels[mealTime]!,
               style:
                   const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
@@ -643,8 +748,7 @@ class _SupplementNotiRow extends ConsumerWidget {
       );
     }
     return ListTile(
-      leading: const Icon(Icons.medication_rounded,
-          color: AppColors.supplement, size: 22),
+      leading: Icon(Icons.medication_rounded, color: c.supplement, size: 22),
       title: Text(_labels[mealTime]!,
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
       trailing: Row(
@@ -659,21 +763,20 @@ class _SupplementNotiRow extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: c.background,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.schedule,
-                        size: 13, color: AppColors.primaryDark),
+                    Icon(Icons.schedule, size: 13, color: c.primaryDark),
                     const SizedBox(width: 4),
                     Text(
                       _formatTime(noti.timeOfDay),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primaryDark,
+                        color: c.primaryDark,
                       ),
                     ),
                   ],
@@ -685,8 +788,8 @@ class _SupplementNotiRow extends ConsumerWidget {
           Switch(
             value: noti.enabled,
             onChanged: (val) => _handleToggle(context, ref, val),
-            activeThumbColor: AppColors.supplement,
-            activeTrackColor: AppColors.supplement.withValues(alpha: 0.4),
+            activeThumbColor: c.supplement,
+            activeTrackColor: c.supplement.withValues(alpha: 0.4),
           ),
         ],
       ),
@@ -695,7 +798,8 @@ class _SupplementNotiRow extends ConsumerWidget {
 
   String _formatTime(TimeOfDay time) {
     final period = time.hour < 12 ? '오전' : '오후';
-    final h = time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
+    final h =
+        time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
     return '$period $h:${time.minute.toString().padLeft(2, '0')}';
   }
 
@@ -748,6 +852,7 @@ class _NotiToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return ListTile(
       leading: Icon(icon, color: iconColor, size: 22),
       title: Text(title,
@@ -755,8 +860,8 @@ class _NotiToggleRow extends StatelessWidget {
       trailing: Switch(
         value: enabled,
         onChanged: onChanged,
-        activeThumbColor: AppColors.primary,
-        activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
+        activeThumbColor: c.primary,
+        activeTrackColor: c.primary.withValues(alpha: 0.4),
       ),
     );
   }
@@ -771,8 +876,10 @@ class _NotiTimeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final period = time.hour < 12 ? '오전' : '오후';
-    final h = time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
+    final h =
+        time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
     final timeStr = '$period $h:${time.minute.toString().padLeft(2, '0')}';
+    final c = context.c;
 
     return InkWell(
       onTap: onTap,
@@ -781,18 +888,18 @@ class _NotiTimeRow extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(56, 0, 16, 14),
         child: Row(
           children: [
-            const Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
+            Icon(Icons.access_time, size: 16, color: c.textSecondary),
             const SizedBox(width: 6),
             Text(
               timeStr,
-              style: const TextStyle(
-                color: AppColors.primaryDark,
+              style: TextStyle(
+                color: c.primaryDark,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.edit, size: 13, color: AppColors.textSecondary),
+            Icon(Icons.edit, size: 13, color: c.textSecondary),
           ],
         ),
       ),

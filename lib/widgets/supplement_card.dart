@@ -24,14 +24,15 @@ class SupplementCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final takenIds = ref.watch(takenSupplementIdsProvider);
     final isTaken = takenIds.contains(supplement.id);
+    final c = context.c;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: isTaken ? AppColors.taken.withValues(alpha: 0.1) : AppColors.surface,
+        color: isTaken ? c.taken.withValues(alpha: 0.1) : c.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isTaken ? AppColors.taken : AppColors.notTaken,
+          color: isTaken ? c.taken : c.notTaken,
           width: 2,
         ),
       ),
@@ -59,10 +60,10 @@ class SupplementCard extends ConsumerWidget {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: AppColors.taken.withValues(alpha: 0.3),
+                              color: c.taken.withValues(alpha: 0.3),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.check_rounded, color: AppColors.taken, size: 32),
+                            child: Icon(Icons.check_rounded, color: c.taken, size: 32),
                           ),
                       ],
                     ),
@@ -74,7 +75,7 @@ class SupplementCard extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isTaken ? AppColors.taken : AppColors.textPrimary,
+                          color: isTaken ? c.taken : c.textPrimary,
                         ),
                         maxLines: 2,
                         textAlign: TextAlign.center,
@@ -86,15 +87,15 @@ class SupplementCard extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: isTaken
-                            ? AppColors.taken.withValues(alpha: 0.15)
-                            : AppColors.supplement.withValues(alpha: 0.15),
+                            ? c.taken.withValues(alpha: 0.15)
+                            : c.supplement.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         mealTimeLabels[supplement.mealTime] ?? supplement.mealTime,
                         style: TextStyle(
                           fontSize: 10,
-                          color: isTaken ? AppColors.taken : AppColors.supplementDark,
+                          color: isTaken ? c.taken : c.supplementDark,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -115,7 +116,7 @@ class SupplementCard extends ConsumerWidget {
                       child: Icon(
                         Icons.more_horiz,
                         size: 18,
-                        color: AppColors.textSecondary.withValues(alpha: 0.6),
+                        color: context.c.textSecondary.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
@@ -136,6 +137,7 @@ class _SupplementImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     if (imagePath != null && File(imagePath!).existsSync()) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(32),
@@ -151,12 +153,12 @@ class _SupplementImage extends StatelessWidget {
       width: 64,
       height: 64,
       decoration: BoxDecoration(
-        color: AppColors.supplement.withValues(alpha: 0.15),
+        color: c.supplement.withValues(alpha: 0.15),
         shape: BoxShape.circle,
       ),
       child: Icon(
         Icons.medication_rounded,
-        color: isTaken ? AppColors.taken : AppColors.supplement,
+        color: isTaken ? c.taken : c.supplement,
         size: 32,
       ),
     );

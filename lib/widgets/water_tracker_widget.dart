@@ -14,15 +14,16 @@ class WaterTrackerWidget extends ConsumerWidget {
     final goal = ref.watch(waterGoalProvider);
     final cupSize = ref.watch(waterCupSizeProvider);
     final percent = (total / goal).clamp(0.0, 1.0);
+    final c = context.c;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: c.primary.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -32,14 +33,14 @@ class WaterTrackerWidget extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.water_drop, color: AppColors.primary, size: 20),
+              Icon(Icons.water_drop, color: c.primary, size: 20),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 '오늘의 물',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: c.textPrimary,
                 ),
               ),
               const Spacer(),
@@ -56,23 +57,23 @@ class WaterTrackerWidget extends ConsumerWidget {
               children: [
                 Text(
                   '$total',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primaryDark,
+                    color: c.primaryDark,
                   ),
                 ),
                 Text(
                   'ml / ${goal}ml',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    color: c.textSecondary,
                   ),
                 ),
               ],
             ),
-            progressColor: AppColors.primary,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+            progressColor: c.primary,
+            backgroundColor: c.primary.withValues(alpha: 0.15),
             circularStrokeCap: CircularStrokeCap.round,
             animation: true,
             animateFromLastPercent: true,
@@ -84,7 +85,7 @@ class WaterTrackerWidget extends ConsumerWidget {
                 child: _WaterButton(
                   label: '+${cupSize}ml',
                   icon: Icons.add,
-                  color: AppColors.primary,
+                  color: c.primary,
                   onTap: () => ref.read(waterAmountProvider.notifier).add(cupSize),
                 ),
               ),
@@ -99,18 +100,18 @@ class WaterTrackerWidget extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: c.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.celebration, size: 16, color: AppColors.primaryDark),
-                  SizedBox(width: 6),
+                  Icon(Icons.celebration, size: 16, color: c.primaryDark),
+                  const SizedBox(width: 6),
                   Text(
                     '오늘 목표 달성!',
                     style: TextStyle(
-                      color: AppColors.primaryDark,
+                      color: c.primaryDark,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -171,6 +172,7 @@ class _FloatingLabelState extends State<_FloatingLabel>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return AnimatedBuilder(
       animation: _controller,
       builder: (_, _) => Transform.translate(
@@ -182,10 +184,10 @@ class _FloatingLabelState extends State<_FloatingLabel>
               color: Colors.transparent,
               child: Text(
                 widget.text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,
+                  color: c.primaryDark,
                 ),
               ),
             ),
@@ -251,8 +253,9 @@ class _UndoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return Material(
-      color: AppColors.textSecondary.withValues(alpha: 0.1),
+      color: c.textSecondary.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -260,11 +263,11 @@ class _UndoButton extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap();
         },
-        child: const Padding(
-          padding: EdgeInsets.all(14),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
           child: Icon(
             Icons.undo,
-            color: AppColors.textSecondary,
+            color: c.textSecondary,
             size: 20,
           ),
         ),
@@ -281,8 +284,9 @@ class _CupSizeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return Material(
-      color: AppColors.primary.withValues(alpha: 0.1),
+      color: c.primary.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -294,17 +298,17 @@ class _CupSizeSelector extends StatelessWidget {
             children: [
               Text(
                 '한 잔 ${cupSize}ml',
-                style: const TextStyle(
-                  color: AppColors.primaryDark,
+                style: TextStyle(
+                  color: c.primaryDark,
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                 ),
               ),
               const SizedBox(width: 2),
-              const Icon(
+              Icon(
                 Icons.keyboard_arrow_down,
                 size: 16,
-                color: AppColors.primaryDark,
+                color: c.primaryDark,
               ),
             ],
           ),
@@ -319,15 +323,18 @@ class _CupSizeSelector extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Column(
+      builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 16),
-          const Text('한 잔 용량 선택', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          const Text('한 잔 용량 선택',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           const SizedBox(height: 8),
           ...[150, 200, 250, 300, 350, 500].map((ml) => ListTile(
                 title: Text('$ml ml'),
-                trailing: cupSize == ml ? const Icon(Icons.check, color: AppColors.primary) : null,
+                trailing: cupSize == ml
+                    ? Icon(Icons.check, color: ctx.c.primary)
+                    : null,
                 onTap: () {
                   ref.read(waterCupSizeProvider.notifier).setCupSize(ml);
                   Navigator.pop(context);

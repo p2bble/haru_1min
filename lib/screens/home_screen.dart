@@ -32,7 +32,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -65,7 +66,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       waterAmount: waterAmount,
       waterGoal: waterGoal,
       cupSize: cupSize,
-      supplementTaken: supplements.where((s) => takenIds.contains(s.id)).length,
+      supplementTaken:
+          supplements.where((s) => takenIds.contains(s.id)).length,
       supplementTotal: supplements.length,
     );
   }
@@ -75,7 +77,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     final supplements = ref.watch(supplementListProvider);
     final takenIds = ref.watch(takenSupplementIdsProvider);
     final today = DateFormat('M월 d일 EEEE', 'ko').format(DateTime.now());
-    final takenCount = supplements.where((s) => takenIds.contains(s.id)).length;
+    final takenCount =
+        supplements.where((s) => takenIds.contains(s.id)).length;
+    final c = context.c;
 
     // 상태 변화 감지 → 위젯 동기화
     ref.listen(waterAmountProvider, (prev, next) => _syncWidget());
@@ -87,8 +91,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('하루 1분', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-            Text(today, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w400)),
+            const Text('하루 1분',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            Text(today,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: c.textSecondary,
+                    fontWeight: FontWeight.w400)),
           ],
         ),
         actions: [
@@ -139,10 +148,12 @@ class _SupplementSection extends ConsumerStatefulWidget {
   final List<Supplement> supplements;
   final int takenCount;
 
-  const _SupplementSection({required this.supplements, required this.takenCount});
+  const _SupplementSection(
+      {required this.supplements, required this.takenCount});
 
   @override
-  ConsumerState<_SupplementSection> createState() => _SupplementSectionState();
+  ConsumerState<_SupplementSection> createState() =>
+      _SupplementSectionState();
 }
 
 class _SupplementSectionState extends ConsumerState<_SupplementSection> {
@@ -170,8 +181,6 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
   }
 
   /// 알림 설정의 시간대별 시각을 재사용해 현재 시간대 판정.
-  /// 인접 시간대의 중간 시각을 경계로 사용 (기본값 기준 ~10시 아침, 10~15시 점심,
-  /// 15~20시 저녁, 20시~ 자기 전). 새벽 4시 이전은 자기 전으로 취급.
   String _currentMealTime(NotificationState noti) {
     final now = DateTime.now();
     final nowMin = now.hour * 60 + now.minute;
@@ -192,8 +201,10 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
     final supplements = widget.supplements;
     final takenIds = ref.watch(takenSupplementIdsProvider);
     final noti = ref.watch(notificationProvider);
-    final allDone = supplements.isNotEmpty && widget.takenCount == supplements.length;
+    final allDone =
+        supplements.isNotEmpty && widget.takenCount == supplements.length;
     final current = _currentMealTime(noti);
+    final c = context.c;
 
     final groups = <String, List<Supplement>>{};
     for (final slot in _mealTimeOrder) {
@@ -206,24 +217,28 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
       children: [
         Row(
           children: [
-            const Icon(Icons.medication_rounded, color: AppColors.supplement, size: 20),
+            Icon(Icons.medication_rounded, color: c.supplement, size: 20),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               '오늘의 영양제',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: c.textPrimary),
             ),
             const Spacer(),
             if (supplements.isNotEmpty) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.supplement.withValues(alpha: 0.1),
+                  color: c.supplement.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '${widget.takenCount} / ${supplements.length}',
-                  style: const TextStyle(
-                    color: AppColors.supplementDark,
+                  style: TextStyle(
+                    color: c.supplementDark,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
@@ -231,18 +246,19 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
               ),
               const SizedBox(width: 8),
               Material(
-                color: AppColors.supplement.withValues(alpha: 0.15),
+                color: c.supplement.withValues(alpha: 0.15),
                 shape: const CircleBorder(),
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AddSupplementScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const AddSupplementScreen()),
                   ),
-                  child: const SizedBox(
+                  child: SizedBox(
                     width: 36,
                     height: 36,
-                    child: Icon(Icons.add, size: 20, color: AppColors.supplementDark),
+                    child: Icon(Icons.add, size: 20, color: c.supplementDark),
                   ),
                 ),
               ),
@@ -251,17 +267,18 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
         ),
         const SizedBox(height: 14),
         if (supplements.isEmpty)
-          const _EmptySupplementHint()
+          _EmptySupplementHint()
         else ...[
           if (_showTip) _MenuTip(onDismiss: _dismissTip),
           if (allDone) ...[
-            _doneBanner('오늘 영양제 모두 완료!', big: true),
+            _doneBanner(context, '오늘 영양제 모두 완료!', big: true),
             const SizedBox(height: 10),
           ],
           for (final entry in groups.entries) ...[
             if (!allDone && entry.key == current)
               _isSlotDone(entry.value, takenIds)
-                  ? _doneBanner('${mealTimeLabels[entry.key]} 영양제 모두 완료!')
+                  ? _doneBanner(
+                      context, '${mealTimeLabels[entry.key]} 영양제 모두 완료!')
                   : _NowGroup(
                       slot: entry.key,
                       items: entry.value,
@@ -291,22 +308,24 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
   bool _isSlotDone(List<Supplement> items, Set<int> takenIds) =>
       items.every((s) => takenIds.contains(s.id));
 
-  Widget _doneBanner(String text, {bool big = false}) {
+  Widget _doneBanner(BuildContext context, String text, {bool big = false}) {
+    final c = context.c;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: big ? 13 : 11),
       decoration: BoxDecoration(
-        color: AppColors.taken.withValues(alpha: 0.1),
+        color: c.taken.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.check_circle, color: AppColors.taken, size: 18),
+          Icon(Icons.check_circle, color: c.taken, size: 18),
           const SizedBox(width: 8),
           Text(
             text,
-            style: const TextStyle(color: AppColors.taken, fontWeight: FontWeight.w600, fontSize: 14),
+            style: TextStyle(
+                color: c.taken, fontWeight: FontWeight.w600, fontSize: 14),
           ),
         ],
       ),
@@ -320,37 +339,39 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Column(
+      builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 16),
-          Text(supplement.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          Text(supplement.name,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           if (supplement.memo != null && supplement.memo!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
               child: Text(
                 '💡 ${supplement.memo}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13, color: ctx.c.textSecondary),
               ),
             ),
           const SizedBox(height: 8),
           ListTile(
-            leading: const Icon(Icons.edit_rounded, color: AppColors.supplement),
+            leading: Icon(Icons.edit_rounded, color: ctx.c.supplement),
             title: const Text('수정'),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => AddSupplementScreen(existing: supplement),
+                  builder: (_) =>
+                      AddSupplementScreen(existing: supplement),
                 ),
               );
             },
           ),
           ListTile(
-            leading: const Icon(Icons.notifications_rounded, color: AppColors.primaryDark),
+            leading: Icon(Icons.notifications_rounded, color: ctx.c.primaryDark),
             title: const Text('알림 시간'),
             subtitle: Text(
               '${mealTimeLabels[supplement.mealTime]} ${ref.read(notificationProvider).supplement(supplement.mealTime).timeOfDay.format(context)}',
@@ -376,12 +397,15 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
   }
 
   Future<void> _pickNotiTime(Supplement supplement) async {
-    final setting = ref.read(notificationProvider).supplement(supplement.mealTime);
-    final picked = await showTimePicker(context: context, initialTime: setting.timeOfDay);
+    final setting =
+        ref.read(notificationProvider).supplement(supplement.mealTime);
+    final picked =
+        await showTimePicker(context: context, initialTime: setting.timeOfDay);
     if (picked == null || !mounted) return;
     await ref.read(notificationProvider.notifier).updateSupplement(
           supplement.mealTime,
-          setting.copyWith(enabled: true, hour: picked.hour, minute: picked.minute),
+          setting.copyWith(
+              enabled: true, hour: picked.hour, minute: picked.minute),
         );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -406,7 +430,9 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
           ),
           TextButton(
             onPressed: () {
-              ref.read(supplementListProvider.notifier).remove(supplement.id!);
+              ref
+                  .read(supplementListProvider.notifier)
+                  .remove(supplement.id!);
               Navigator.pop(context);
             },
             child: const Text('삭제', style: TextStyle(color: Colors.red)),
@@ -434,11 +460,12 @@ class _NowGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final remaining = items.where((s) => !takenIds.contains(s.id)).length;
+    final c = context.c;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.supplement.withValues(alpha: 0.12),
+        color: c.supplement.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -448,14 +475,15 @@ class _NowGroup extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             child: Row(
               children: [
-                Icon(_mealTimeIcons[slot], size: 15, color: AppColors.supplementDark),
+                Icon(_mealTimeIcons[slot],
+                    size: 15, color: c.supplementDark),
                 const SizedBox(width: 6),
                 Text(
                   '${mealTimeLabels[slot]} · 지금',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.supplementDark,
+                    color: c.supplementDark,
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -463,7 +491,7 @@ class _NowGroup extends StatelessWidget {
                   '${items.length}개 중 $remaining개 남았어요',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.supplementDark.withValues(alpha: 0.7),
+                    color: c.supplementDark.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -497,14 +525,15 @@ class _SlotRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = items.every((s) => takenIds.contains(s.id));
+    final c = context.c;
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.06),
+            color: c.primary.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -518,34 +547,40 @@ class _SlotRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               onTap: onToggleExpand,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                 child: Row(
                   children: [
-                    Icon(_mealTimeIcons[slot], size: 18, color: AppColors.textSecondary),
+                    Icon(_mealTimeIcons[slot],
+                        size: 18, color: c.textSecondary),
                     const SizedBox(width: 10),
                     Text(
                       mealTimeLabels[slot]!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: c.textPrimary,
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         items.map((s) => s.name).join(' · '),
-                        style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                        style: TextStyle(
+                            fontSize: 12.5, color: c.textSecondary),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (done && !expanded)
-                      const Icon(Icons.check_circle, size: 17, color: AppColors.taken)
+                      Icon(Icons.check_circle,
+                          size: 17, color: c.taken)
                     else
                       Icon(
-                        expanded ? Icons.expand_less : Icons.chevron_right,
+                        expanded
+                            ? Icons.expand_less
+                            : Icons.chevron_right,
                         size: 18,
-                        color: AppColors.textSecondary.withValues(alpha: 0.5),
+                        color: c.textSecondary.withValues(alpha: 0.5),
                       ),
                   ],
                 ),
@@ -599,6 +634,7 @@ class _MenuTip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return GestureDetector(
       onTap: onDismiss,
       child: Padding(
@@ -607,21 +643,25 @@ class _MenuTip extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.textPrimary,
+                color: c.textPrimary,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
                 '⋯ 또는 길게 눌러 수정해요',
-                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600),
               ),
             ),
             Transform.translate(
               offset: const Offset(28, -4),
               child: Transform.rotate(
                 angle: math.pi / 4,
-                child: Container(width: 8, height: 8, color: AppColors.textPrimary),
+                child: Container(width: 8, height: 8, color: c.textPrimary),
               ),
             ),
           ],
@@ -631,14 +671,15 @@ class _MenuTip extends StatelessWidget {
   }
 }
 
-/// 첫 실행 빈 상태 — 점선 카드 + "사진으로 등록" CTA (FAB 제거 후의 등록 동선)
+/// 첫 실행 빈 상태 — 점선 카드 + "사진으로 등록" CTA
 class _EmptySupplementHint extends StatelessWidget {
   const _EmptySupplementHint();
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return CustomPaint(
-      painter: _DashedRRectPainter(color: AppColors.notTaken, radius: 18),
+      painter: _DashedRRectPainter(color: c.notTaken, radius: 18),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 20),
@@ -648,36 +689,44 @@ class _EmptySupplementHint extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: AppColors.supplement.withValues(alpha: 0.15),
+                color: c.supplement.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.medication_rounded, color: AppColors.supplement, size: 30),
+              child: Icon(Icons.medication_rounded,
+                  color: c.supplement, size: 30),
             ),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               '드시는 영양제가 있나요?',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: c.textPrimary),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               '사진으로 등록하면 매일 체크만 하면 돼요',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary, height: 1.6),
+              style: TextStyle(
+                  fontSize: 12.5, color: c.textSecondary, height: 1.6),
             ),
             const SizedBox(height: 14),
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.supplement,
+                backgroundColor: c.supplement,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(0, 46),
                 padding: const EdgeInsets.symmetric(horizontal: 22),
-                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                textStyle: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w800),
               ),
               icon: const Icon(Icons.photo_camera, size: 17),
               label: const Text('사진으로 등록'),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AddSupplementScreen(autoPhoto: true)),
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const AddSupplementScreen(autoPhoto: true)),
               ),
             ),
           ],

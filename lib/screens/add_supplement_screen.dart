@@ -124,18 +124,19 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Column(
+      builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 16),
-          const Text('사진 선택', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          const Text('사진 선택',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           ListTile(
-            leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+            leading: Icon(Icons.camera_alt_rounded, color: ctx.c.primary),
             title: const Text('카메라로 찍기'),
             onTap: () => Navigator.pop(context, ImageSource.camera),
           ),
           ListTile(
-            leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+            leading: Icon(Icons.photo_library_rounded, color: ctx.c.primary),
             title: const Text('갤러리에서 선택'),
             onTap: () => Navigator.pop(context, ImageSource.gallery),
           ),
@@ -177,9 +178,30 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
     if (mounted) Navigator.pop(context);
   }
 
+  InputDecoration _fieldDecoration({required String hint, required bool aiFilled}) {
+    final c = context.c;
+    final aiBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: c.supplement, width: 1.5),
+    );
+    final plainBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide.none,
+    );
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: c.surface,
+      border: plainBorder,
+      enabledBorder: aiFilled ? aiBorder : plainBorder,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final canSave = _nameController.text.trim().isNotEmpty;
+    final c = context.c;
 
     return Scaffold(
       appBar: AppBar(
@@ -201,7 +223,8 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
                 onReanalyze: _analyzeImage,
               ),
             const SizedBox(height: 28),
-            const Text('영양제 이름', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const Text('영양제 이름',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 12),
             _AiTaggedField(
               showBadge: _aiName,
@@ -215,7 +238,8 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text('복용 시간', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const Text('복용 시간',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 16),
             Wrap(
               spacing: 10,
@@ -226,14 +250,14 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
                   label: Text(e.value),
                   selected: selected,
                   onSelected: (_) => setState(() => _selectedMealTime = e.key),
-                  selectedColor: AppColors.supplement,
+                  selectedColor: c.supplement,
                   labelStyle: TextStyle(
-                    color: selected ? Colors.white : AppColors.textSecondary,
+                    color: selected ? Colors.white : c.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
-                  backgroundColor: AppColors.surface,
+                  backgroundColor: c.surface,
                   side: BorderSide(
-                    color: selected ? AppColors.supplement : AppColors.notTaken,
+                    color: selected ? c.supplement : c.notTaken,
                   ),
                 );
                 if (_aiMealTime != e.key) return chip;
@@ -248,15 +272,18 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
                       right: 0,
                       child: Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.supplementDark,
+                            color: c.supplementDark,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
                             'AI 추천',
                             style: TextStyle(
-                                color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800),
+                                color: Colors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800),
                           ),
                         ),
                       ),
@@ -289,44 +316,27 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 10),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            border: Border(top: BorderSide(color: Color(0xFFE5E9F0))),
+          decoration: BoxDecoration(
+            color: c.background,
+            border: Border(top: BorderSide(color: c.notTaken)),
           ),
           child: FilledButton(
             onPressed: canSave && !_isAnalyzing ? _save : null,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.supplement,
-              disabledBackgroundColor: AppColors.notTaken,
+              backgroundColor: c.supplement,
+              disabledBackgroundColor: c.notTaken,
               foregroundColor: Colors.white,
-              disabledForegroundColor: AppColors.textSecondary.withValues(alpha: 0.6),
+              disabledForegroundColor: c.textSecondary.withValues(alpha: 0.6),
               minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              textStyle: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+              textStyle:
+                  const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
             ),
             child: const Text('저장하기'),
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _fieldDecoration({required String hint, required bool aiFilled}) {
-    final aiBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.supplement, width: 1.5),
-    );
-    final plainBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide.none,
-    );
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: AppColors.surface,
-      border: plainBorder,
-      enabledBorder: aiFilled ? aiBorder : plainBorder,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }
@@ -341,6 +351,7 @@ class _AiTaggedField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!showBadge) return child;
+    final c = context.c;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -351,7 +362,7 @@ class _AiTaggedField extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.supplementDark,
+              color: c.supplementDark,
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Row(
@@ -361,7 +372,10 @@ class _AiTaggedField extends StatelessWidget {
                 SizedBox(width: 3),
                 Text(
                   'AI 입력',
-                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -380,13 +394,14 @@ class _PhotoValueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return CustomPaint(
       painter: _DashedRRectPainter(
-        color: AppColors.supplement.withValues(alpha: 0.4),
+        color: c.supplement.withValues(alpha: 0.4),
         radius: 18,
       ),
       child: Material(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -400,23 +415,26 @@ class _PhotoValueCard extends StatelessWidget {
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: AppColors.supplement.withValues(alpha: 0.15),
+                    color: c.supplement.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.photo_camera,
-                      color: AppColors.supplementDark, size: 30),
+                  child: Icon(Icons.photo_camera,
+                      color: c.supplementDark, size: 30),
                 ),
                 const SizedBox(height: 13),
-                const Text(
+                Text(
                   '사진을 찍어보세요',
                   style: TextStyle(
-                      fontSize: 14.5, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                      color: c.textPrimary),
                 ),
                 const SizedBox(height: 5),
-                const Text(
+                Text(
                   '통 사진 한 장이면 AI가 이름·복용 시간·팁을\n자동으로 채워줘요',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.55),
+                  style: TextStyle(
+                      fontSize: 12, color: c.textSecondary, height: 1.55),
                 ),
               ],
             ),
@@ -445,10 +463,11 @@ class _PhotoStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -474,7 +493,7 @@ class _PhotoStatusCard extends StatelessWidget {
                     width: 22,
                     height: 22,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: c.surface,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -484,8 +503,8 @@ class _PhotoStatusCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.photo_camera,
-                        size: 13, color: AppColors.textSecondary),
+                    child: Icon(Icons.photo_camera,
+                        size: 13, color: c.textSecondary),
                   ),
                 ),
               ],
@@ -499,17 +518,17 @@ class _PhotoStatusCard extends StatelessWidget {
                 Row(
                   children: [
                     if (isAnalyzing)
-                      const SizedBox(
+                      SizedBox(
                         width: 13,
                         height: 13,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.supplementDark),
+                            strokeWidth: 2, color: c.supplementDark),
                       )
                     else
                       Icon(
                         analyzed ? Icons.auto_awesome : Icons.photo_camera,
                         size: 15,
-                        color: AppColors.supplementDark,
+                        color: c.supplementDark,
                       ),
                     const SizedBox(width: 5),
                     Text(
@@ -518,10 +537,10 @@ class _PhotoStatusCard extends StatelessWidget {
                           : analyzed
                               ? 'AI 분석 완료'
                               : '사진 등록됨',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.supplementDark,
+                        color: c.supplementDark,
                       ),
                     ),
                   ],
@@ -529,18 +548,20 @@ class _PhotoStatusCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   isAnalyzing ? '이름·복용 시간·팁을 채우고 있어요' : '사진을 바꾸면 다시 분석해요',
-                  style: const TextStyle(
-                      fontSize: 11.5, color: AppColors.textSecondary, height: 1.5),
+                  style: TextStyle(
+                      fontSize: 11.5, color: c.textSecondary, height: 1.5),
                 ),
               ],
             ),
           ),
           TextButton(
             onPressed: isAnalyzing ? null : onReanalyze,
-            child: const Text(
+            child: Text(
               '다시 분석',
               style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: c.primaryDark),
             ),
           ),
         ],

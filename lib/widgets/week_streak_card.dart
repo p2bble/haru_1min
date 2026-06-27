@@ -17,6 +17,7 @@ class WeekStreakCard extends ConsumerWidget {
     final todayWater = ref.watch(waterAmountProvider);
     final supplements = ref.watch(supplementListProvider);
     final takenIds = ref.watch(takenSupplementIdsProvider);
+    final c = context.c;
 
     return FutureBuilder<List<_DayStatus>>(
       future: _loadWeek(goal, todayWater, supplements.length, takenIds.length),
@@ -30,63 +31,64 @@ class WeekStreakCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: c.primary.withValues(alpha: 0.1),
                 blurRadius: 18,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Material(
-            color: AppColors.surface,
+            color: c.surface,
             borderRadius: BorderRadius.circular(20),
             child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const StatsScreen()),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        '이번 주 기록',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const StatsScreen()),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          '이번 주 기록',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: c.textPrimary,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        achieved > 0 ? '$achieved일 달성 중' : '시작이 반이에요',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryDark,
+                        const Spacer(),
+                        Text(
+                          achieved > 0 ? '$achieved일 달성 중' : '시작이 반이에요',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: c.primaryDark,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      for (var i = 0; i < 7; i++)
-                        _DayDot(
-                          label: _weekLabels[i],
-                          status: days != null && i < days.length
-                              ? days[i]
-                              : const _DayStatus(0, isToday: false, isFuture: true),
-                        ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        for (var i = 0; i < 7; i++)
+                          _DayDot(
+                            label: _weekLabels[i],
+                            status: days != null && i < days.length
+                                ? days[i]
+                                : const _DayStatus(0,
+                                    isToday: false, isFuture: true),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           ),
         );
       },
@@ -144,29 +146,32 @@ class _DayDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return Column(
       children: [
-        SizedBox(width: 32, height: 32, child: _buildDot()),
+        SizedBox(width: 32, height: 32, child: _buildDot(context)),
         const SizedBox(height: 5),
         Text(
           label,
           style: TextStyle(
             fontSize: 10.5,
             fontWeight: status.isToday ? FontWeight.w800 : FontWeight.w500,
-            color: status.isToday ? AppColors.primaryDark : AppColors.textSecondary,
+            color: status.isToday ? c.primaryDark : c.textSecondary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDot() {
+  Widget _buildDot(BuildContext context) {
+    final c = context.c;
+
     // 오늘은 진행 중(점선 테두리), 단 모두 달성하면 채워진 점으로
     if (status.isToday && status.level < 2) {
       return CustomPaint(
-        painter: _DashedCirclePainter(color: AppColors.primary),
+        painter: _DashedCirclePainter(color: c.primary),
         child: status.level == 1
-            ? const Icon(Icons.check, size: 15, color: AppColors.primaryDark)
+            ? Icon(Icons.check, size: 15, color: c.primaryDark)
             : null,
       );
     }
@@ -176,7 +181,7 @@ class _DayDot extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.notTaken.withValues(alpha: 0.6),
+            color: c.notTaken.withValues(alpha: 0.6),
             width: 2,
           ),
         ),
@@ -185,23 +190,23 @@ class _DayDot extends StatelessWidget {
 
     switch (status.level) {
       case 2:
-        return const DecoratedBox(
-          decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary),
-          child: Icon(Icons.check, size: 15, color: Colors.white),
+        return DecoratedBox(
+          decoration: BoxDecoration(shape: BoxShape.circle, color: c.primary),
+          child: const Icon(Icons.check, size: 15, color: Colors.white),
         );
       case 1:
         return DecoratedBox(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.primary.withValues(alpha: 0.15),
+            color: c.primary.withValues(alpha: 0.15),
           ),
-          child: const Icon(Icons.check, size: 15, color: AppColors.primaryDark),
+          child: Icon(Icons.check, size: 15, color: c.primaryDark),
         );
       default:
         return Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.notTaken, width: 2),
+            border: Border.all(color: c.notTaken, width: 2),
           ),
         );
     }
