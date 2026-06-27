@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 컴팩트(소형) 위젯: 원형 링(물 진행) + 중앙 물방울/% + 영양제 미니 + 아이콘 "+" 버튼 -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:padding="8dp">
+
+    <!-- 원형 링 + 중앙 콘텐츠 -->
+    <FrameLayout
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:layout_gravity="center">
+
+        <ProgressBar
+            android:id="@+id/widget_ring"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:indeterminate="false"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/water_ring" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💧"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/widget_ring_percent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0%"
+                android:maxLines="1"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/w_accent2" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- 영양제 미니 (없으면 GONE) -->
+    <TextView
+        android:id="@+id/widget_supp_mini"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:text="💊 0/0"
+        android:maxLines="1"
+        android:textSize="10sp"
+        android:textColor="@color/w_text2" />
+
+    <!-- 아이콘 only "+" 버튼 (터치영역 48dp) -->
+    <FrameLayout
+        android:id="@+id/widget_add_water_btn"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="bottom|end">
+
+        <TextView
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_gravity="center"
+            android:background="@drawable/widget_fab_bg"
+            android:gravity="center"
+            android:text="+"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+    </FrameLayout>
+
+</FrameLayout>

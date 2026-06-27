@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 위젯 다크모드 색상 (시스템 다크 테마 시 자동 적용) -->
+<resources>
+    <color name="w_card">#1A2029</color>
+    <color name="w_text">#ECEFF4</color>
+    <color name="w_text2">#9AA4B2</color>
+    <color name="w_accent">#4FC3F7</color>
+    <color name="w_accent2">#7FD4F9</color>
+    <color name="w_track">#2A3A44</color>
+    <color name="w_divider">#313A44</color>
+</resources>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 원형 진행 링 (물 목표 대비) — ProgressBar progressDrawable 용. setProgressBar로 progress 갱신 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape
+            android:shape="ring"
+            android:thicknessRatio="10"
+            android:innerRadiusRatio="2.7"
+            android:useLevel="false">
+            <solid android:color="@color/w_track" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <rotate
+            android:fromDegrees="270"
+            android:toDegrees="270"
+            android:pivotX="50%"
+            android:pivotY="50%">
+            <shape
+                android:shape="ring"
+                android:thicknessRatio="10"
+                android:innerRadiusRatio="2.7"
+                android:useLevel="true">
+                <solid android:color="@color/w_accent" />
+            </shape>
+        </rotate>
+    </item>
+</layer-list>

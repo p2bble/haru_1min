@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -18,25 +19,31 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="하루 1분"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textSize="13sp"
             android:textStyle="bold"
-            android:textColor="#1A1A2E" />
+            android:textColor="@color/w_text" />
 
         <TextView
             android:id="@+id/widget_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
             android:text="오늘"
+            android:maxLines="1"
             android:textSize="11sp"
-            android:textColor="#6B7280" />
+            android:textColor="@color/w_text2" />
     </LinearLayout>
 
-    <View
+    <!-- 구분선: RemoteViews는 순수 View 인플레이트 불가 → FrameLayout(허용)으로 대체 -->
+    <FrameLayout
+        android:id="@+id/widget_divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
-        android:background="#F0F0F0" />
+        android:background="@color/w_divider" />
 
     <!-- 물 섭취 -->
     <LinearLayout
@@ -58,17 +65,21 @@
             android:layout_weight="1"
             android:layout_marginStart="6dp"
             android:text="0 / 2000ml"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textSize="13sp"
-            android:textColor="#1A1A2E"
+            android:textColor="@color/w_text"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/widget_water_percent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
             android:text="0%"
+            android:maxLines="1"
             android:textSize="12sp"
-            android:textColor="#0288D1" />
+            android:textColor="@color/w_accent2" />
     </LinearLayout>
 
     <!-- 물 프로그레스 바 -->
@@ -81,11 +92,12 @@
         android:layout_marginBottom="6dp"
         android:max="100"
         android:progress="0"
-        android:progressTint="#4FC3F7"
-        android:progressBackgroundTint="#E0F4FF" />
+        android:progressTint="@color/w_accent"
+        android:progressBackgroundTint="@color/w_track" />
 
     <!-- 영양제 -->
     <LinearLayout
+        android:id="@+id/widget_supplement_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -104,12 +116,15 @@
             android:layout_weight="1"
             android:layout_marginStart="6dp"
             android:text="영양제 0 / 0"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textSize="12sp"
-            android:textColor="#1A1A2E" />
+            android:textColor="@color/w_text" />
     </LinearLayout>
 
     <!-- 버튼 -->
     <LinearLayout
+        android:id="@+id/widget_button_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"

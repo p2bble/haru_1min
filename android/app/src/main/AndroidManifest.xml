@@ -11,7 +11,8 @@
     <application
         android:label="하루 1분"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -40,11 +41,20 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.p2bble.haru_1min.ADD_WATER" />
+                <action android:name="com.p2bble.haru_1min.MIDNIGHT_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/haru_widget_info" />
+        </receiver>
+
+        <!-- home_widget interactive 버튼 → 백그라운드 콜백 리시버 (필수 — 없으면 위젯 버튼 무동작) -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
         </receiver>
 
         <!-- home_widget background service -->

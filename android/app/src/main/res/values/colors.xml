@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#4FC3F7</color>
+
+    <!-- 위젯 색상 (라이트 기본값 / values-night에 다크 오버라이드) -->
+    <color name="w_card">#FFFFFF</color>
+    <color name="w_text">#1A1A2E</color>
+    <color name="w_text2">#6B7280</color>
+    <color name="w_accent">#4FC3F7</color>
+    <color name="w_accent2">#0288D1</color>
+    <color name="w_track">#E0F4FF</color>
+    <color name="w_divider">#F0F0F0</color>
 </resources>

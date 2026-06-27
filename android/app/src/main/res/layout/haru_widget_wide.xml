@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 와이드(가로로 넓고 2행 높이) 위젯: 왼쪽 정보 + 오른쪽 큰 "+ 한 잔 마셨어요" 버튼 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/widget_background"
+    android:padding="12dp">
+
+    <!-- 왼쪽: 정보 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- 헤더 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="하루 1분"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/w_text" />
+
+            <TextView
+                android:id="@+id/widget_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="오늘"
+                android:maxLines="1"
+                android:textSize="11sp"
+                android:textColor="@color/w_text2" />
+        </LinearLayout>
+
+        <!-- 물 섭취 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💧"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/widget_water_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="0 / 2000ml"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textSize="12sp"
+                android:textColor="@color/w_text"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_water_percent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="0%"
+                android:maxLines="1"
+                android:textSize="12sp"
+                android:textColor="@color/w_accent2" />
+        </LinearLayout>
+
+        <!-- 물 프로그레스 바 -->
+        <ProgressBar
+            android:id="@+id/widget_water_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:max="100"
+            android:progress="0"
+            android:progressTint="@color/w_accent"
+            android:progressBackgroundTint="@color/w_track" />
+
+        <!-- 영양제 (💊 + 도트) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💊"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/widget_supplement_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="5dp"
+                android:text="영양제 0 / 0"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textSize="11sp"
+                android:textColor="@color/w_text2" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 오른쪽: 큰 "+ 한 잔 마셨어요" 버튼 (세로 꽉) -->
+    <TextView
+        android:id="@+id/widget_add_water_btn"
+        android:layout_width="88dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/widget_button_bg"
+        android:gravity="center"
+        android:text="+ 한 잔\n마셨어요"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>
