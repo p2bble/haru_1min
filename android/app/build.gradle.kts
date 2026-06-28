@@ -7,6 +7,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
+    id("com.github.triplet.play")
 }
 
 val keyPropertiesFile = rootProject.file("key.properties")
@@ -64,4 +65,13 @@ dependencies {
 
 flutter {
     source = "../.."
+}
+
+// Gradle Play Publisher: AAB를 Play Console에 자동 업로드
+// 자격증명(service-account.json)은 프로젝트 루트에 위치(.gitignore 처리)
+play {
+    serviceAccountCredentials.set(rootProject.file("../service-account.json"))
+    track.set("production")
+    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.COMPLETED)
+    defaultToAppBundles.set(true)
 }
