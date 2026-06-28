@@ -1,9 +1,34 @@
+import 'dart:convert';
+
+/// 라벨에서 읽은 영양소 1정당 함량. [amount]/[unit]은 표(영양·기능정보)를
+/// 못 읽으면 null — 그래도 [key]만 있으면 "중복" 판정에는 쓸 수 있다.
+class NutrientAmount {
+  final String key; // nutrient_info.kNutrients의 표준 키
+  final double? amount; // 1정당 함량
+  final String? unit; // mg / ug / IU
+
+  const NutrientAmount({required this.key, this.amount, this.unit});
+
+  Map<String, dynamic> toJson() => {
+        'key': key,
+        if (amount != null) 'amount': amount,
+        if (unit != null) 'unit': unit,
+      };
+
+  factory NutrientAmount.fromJson(Map<String, dynamic> json) => NutrientAmount(
+        key: json['key'] as String,
+        amount: (json['amount'] as num?)?.toDouble(),
+        unit: json['unit'] as String?,
+      );
+}
+
 class Supplement {
   final int? id;
   final String name;
   final String? imagePath;
   final String mealTime; // morning, lunch, dinner, bedtime
   final String? memo; // 복용 팁 (AI 분석 결과 또는 직접 입력)
+  final List<NutrientAmount> nutrients; // AI가 라벨에서 추출한 성분 (중복 분석용)
   final bool isActive;
   final DateTime createdAt;
 
@@ -13,6 +38,7 @@ class Supplement {
     this.imagePath,
     required this.mealTime,
     this.memo,
+    this.nutrients = const [],
     this.isActive = true,
     required this.createdAt,
   });
@@ -23,6 +49,7 @@ class Supplement {
     String? imagePath,
     String? mealTime,
     String? memo,
+    List<NutrientAmount>? nutrients,
     bool? isActive,
     DateTime? createdAt,
   }) {
@@ -32,6 +59,7 @@ class Supplement {
       imagePath: imagePath ?? this.imagePath,
       mealTime: mealTime ?? this.mealTime,
       memo: memo ?? this.memo,
+      nutrients: nutrients ?? this.nutrients,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -44,6 +72,9 @@ class Supplement {
       'imagePath': imagePath,
       'mealTime': mealTime,
       'memo': memo,
+      'nutrients': nutrients.isEmpty
+          ? null
+          : jsonEncode(nutrients.map((n) => n.toJson()).toList()),
       'isActive': isActive ? 1 : 0,
       'createdAt': createdAt.toIso8601String(),
     };
@@ -56,9 +87,22 @@ class Supplement {
       imagePath: map['imagePath'],
       mealTime: map['mealTime'],
       memo: map['memo'],
+      nutrients: _decodeNutrients(map['nutrients'] as String?),
       isActive: map['isActive'] == 1,
       createdAt: DateTime.parse(map['createdAt']),
     );
+  }
+
+  static List<NutrientAmount> _decodeNutrients(String? raw) {
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final list = jsonDecode(raw) as List;
+      return list
+          .map((e) => NutrientAmount.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
   }
 }
 

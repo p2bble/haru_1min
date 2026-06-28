@@ -26,12 +26,16 @@ class DbHelper {
     final dbPath = await getDatabasesPath();
     return openDatabase(
       join(dbPath, 'haru1min.db'),
-      version: 2,
+      version: 3,
       // sqflite는 FK가 기본 OFF — 켜야 supplement_logs CASCADE가 동작한다
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE supplements ADD COLUMN memo TEXT');
+        }
+        if (oldVersion < 3) {
+          // 라벨 성분(JSON). 기존 영양제는 NULL → "다시 분석" 시 채워진다.
+          await db.execute('ALTER TABLE supplements ADD COLUMN nutrients TEXT');
         }
       },
       onCreate: (db, version) async {
@@ -42,6 +46,7 @@ class DbHelper {
             imagePath TEXT,
             mealTime TEXT NOT NULL,
             memo TEXT,
+            nutrients TEXT,
             isActive INTEGER NOT NULL DEFAULT 1,
             createdAt TEXT NOT NULL
           )

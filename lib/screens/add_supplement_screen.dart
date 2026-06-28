@@ -25,6 +25,7 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
   final _memoController = TextEditingController();
   String _selectedMealTime = 'morning';
   String? _imagePath;
+  List<NutrientAmount> _nutrients = const []; // AI 추출 성분 (중복 분석용)
   bool _isAnalyzing = false;
   bool _analyzed = false;
 
@@ -43,6 +44,7 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
       _memoController.text = widget.existing!.memo ?? '';
       _selectedMealTime = widget.existing!.mealTime;
       _imagePath = widget.existing!.imagePath;
+      _nutrients = widget.existing!.nutrients;
     }
     // 저장 버튼 활성화 + AI 뱃지 해제 갱신
     _nameController.addListener(() {
@@ -89,6 +91,7 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
       }
       _selectedMealTime = result.mealTime;
       _aiMealTime = result.mealTime;
+      _nutrients = result.nutrients;
       if (result.tip != null && result.tip!.isNotEmpty) {
         _aiTipValue = result.tip;
         _memoController.text = result.tip!;
@@ -158,6 +161,7 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
               imagePath: _imagePath,
               mealTime: _selectedMealTime,
               memo: memo.isEmpty ? null : memo,
+              nutrients: _nutrients,
             ),
           );
       if (_imagePath != widget.existing!.imagePath) {
@@ -170,6 +174,7 @@ class _AddSupplementScreenState extends ConsumerState<AddSupplementScreen> {
               imagePath: _imagePath,
               mealTime: _selectedMealTime,
               memo: memo.isEmpty ? null : memo,
+              nutrients: _nutrients,
               createdAt: DateTime.now(),
             ),
           );
