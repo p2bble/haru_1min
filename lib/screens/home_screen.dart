@@ -7,6 +7,7 @@ import '../models/supplement.dart';
 import '../providers/notification_provider.dart';
 import '../providers/supplement_provider.dart';
 import '../providers/water_provider.dart';
+import '../services/nutrient_info.dart';
 import '../services/widget_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/supplement_card.dart';
@@ -270,6 +271,7 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
           _EmptySupplementHint()
         else ...[
           if (_showTip) _MenuTip(onDismiss: _dismissTip),
+          _NutrientWarningCard(supplements: supplements),
           if (allDone) ...[
             _doneBanner(context, '오늘 영양제 모두 완료!', big: true),
             const SizedBox(height: 10),
@@ -667,6 +669,165 @@ class _MenuTip extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 등록된 영양제 전반의 성분 중복·상한 근접을 안내하는 정보 카드.
+/// 경고할 게 없으면 아무것도 그리지 않는다. (알람 아닌 정보 톤)
+class _NutrientWarningCard extends StatelessWidget {
+  final List<Supplement> supplements;
+
+  const _NutrientWarningCard({required this.supplements});
+
+  // 레벨 → (색, 라벨)
+  static (Color, String) _levelStyle(NutrientLevel l) => switch (l) {
+        NutrientLevel.overLimit => (const Color(0xFFE53935), '상한 근접'),
+        NutrientLevel.nearLimit => (const Color(0xFFF57C00), '상한 근접'),
+        NutrientLevel.overlap => (const Color(0xFFF9A825), '중복'),
+        NutrientLevel.ok => (Colors.grey, ''),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final statuses = analyzeNutrients(supplements);
+    if (statuses.isEmpty) return const SizedBox.shrink();
+
+    final worst = statuses.first.level;
+    final (color, _) = _levelStyle(worst);
+    final overLimit = worst == NutrientLevel.overLimit ||
+        worst == NutrientLevel.nearLimit;
+    final names = statuses.take(3).map((s) => s.label).join('·');
+    final summary = overLimit
+        ? '$names 합산이 권장 상한에 가까워요'
+        : '$names 등 ${statuses.length}개 성분이 여러 제품에 겹쳐요';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showDetail(context, statuses),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(overLimit ? Icons.warning_amber_rounded : Icons.info_outline,
+                    size: 19, color: color),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        overLimit ? '영양소 상한 주의' : '영양소 중복 감지',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: color),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        summary,
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            color: context.c.textSecondary,
+                            height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right,
+                    size: 18,
+                    color: context.c.textSecondary.withValues(alpha: 0.5)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDetail(BuildContext context, List<NutrientStatus> statuses) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final c = ctx.c;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.medication_liquid_rounded,
+                        size: 18, color: c.supplement),
+                    const SizedBox(width: 8),
+                    const Text('성분 겹침 확인',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 16)),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                for (final s in statuses) ...[
+                  _detailRow(ctx, s),
+                  const SizedBox(height: 12),
+                ],
+                Text(
+                  '※ KDRIs 2020 상한섭취량(UL) 기준 안내예요. 의학적 진단이 아니며, '
+                  '복용이 걱정되면 전문가와 상담하세요.',
+                  style: TextStyle(
+                      fontSize: 11, color: c.textSecondary, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _detailRow(BuildContext context, NutrientStatus s) {
+    final c = context.c;
+    final (color, levelLabel) = _levelStyle(s.level);
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(s.label,
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700)),
+        ),
+        Text(
+          s.ulPercent != null
+              ? '${s.productCount}개 제품 · 상한 ${s.ulPercent!.round()}%'
+              : '${s.productCount}개 제품에 중복',
+          style: TextStyle(fontSize: 12, color: c.textSecondary),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(levelLabel,
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w800, color: color)),
+        ),
+      ],
     );
   }
 }
