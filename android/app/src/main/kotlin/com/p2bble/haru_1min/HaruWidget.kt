@@ -47,14 +47,17 @@ class HaruWidget : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == ACTION_MIDNIGHT_UPDATE) {
-            // 자정 알람 발생 → 모든 위젯을 즉시 다시 그려 어제 수치를 0으로 리셋
-            val manager = AppWidgetManager.getInstance(context)
-            val ids = manager.getAppWidgetIds(ComponentName(context, HaruWidget::class.java))
-            for (id in ids) {
-                updateWidget(context, manager, id)
+        when (intent.action) {
+            ACTION_MIDNIGHT_UPDATE -> {
+                // 자정 알람 발생 → 모든 위젯을 즉시 다시 그려 어제 수치를 0으로 리셋
+                val manager = AppWidgetManager.getInstance(context)
+                val ids = manager.getAppWidgetIds(ComponentName(context, HaruWidget::class.java))
+                for (id in ids) {
+                    updateWidget(context, manager, id)
+                }
+                scheduleMidnightUpdate(context)
             }
-            scheduleMidnightUpdate(context)
+            ACTION_ADD_WATER -> handleAddWater(context, intent)
         }
     }
 
@@ -71,6 +74,8 @@ class HaruWidget : AppWidgetProvider() {
     companion object {
         private const val ACTION_MIDNIGHT_UPDATE = "com.p2bble.haru_1min.MIDNIGHT_UPDATE"
         private const val MIDNIGHT_REQUEST_CODE = 1001
+        private const val ACTION_ADD_WATER = "com.p2bble.haru_1min.ADD_WATER"
+        private const val ADD_WATER_REQUEST_CODE = 1002
 
         // 위젯에 표시할 데이터 묶음 (prefs 1회 읽기)
         private data class WidgetData(
@@ -123,10 +128,11 @@ class HaruWidget : AppWidgetProvider() {
 
         // 모든 레이아웃 공통: 물 추가 버튼 + 본문 탭(앱 열기) 클릭 연결
         private fun applyClicks(context: Context, views: RemoteViews, cupSize: Int) {
-            val addWaterUri = Uri.parse("homeWidget://add_water?cup_size=$cupSize")
+            // 물 추가는 우리 리시버(ACTION_ADD_WATER)로 직접 전달 → 네이티브에서 즉시 반영.
+            // (Dart 백그라운드 엔진 부팅을 기다리지 않으므로 체감 지연 제거)
             views.setOnClickPendingIntent(
                 R.id.widget_add_water_btn,
-                HomeWidgetBackgroundIntent.getBroadcast(context, addWaterUri)
+                addWaterPendingIntent(context, cupSize)
             )
             views.setOnClickPendingIntent(
                 R.id.widget_root,
@@ -205,6 +211,46 @@ class HaruWidget : AppWidgetProvider() {
             }
 
             appWidgetManager.updateAppWidget(widgetId, remoteViews)
+        }
+
+        // 물 추가 버튼 → 우리 리시버로 직접 전달하는 PendingIntent (cup_size 동봉)
+        private fun addWaterPendingIntent(context: Context, cupSize: Int): PendingIntent {
+            val intent = Intent(context, HaruWidget::class.java).apply {
+                action = ACTION_ADD_WATER
+                // data를 cup_size별로 구분해 PendingIntent가 덮어써지지 않게 함
+                data = Uri.parse("haruwidget://add_water?cup_size=$cupSize")
+            }
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            return PendingIntent.getBroadcast(context, ADD_WATER_REQUEST_CODE, intent, flags)
+        }
+
+        // 물 한 잔 추가: ①네이티브가 prefs를 즉시 올리고 위젯을 바로 갱신(체감 즉시) →
+        //              ②Dart 백그라운드 콜백으로 DB에 권위 저장(지연돼도 화면은 이미 반영됨)
+        private fun handleAddWater(context: Context, intent: Intent) {
+            val cupSize = intent.data?.getQueryParameter("cup_size")?.toIntOrNull() ?: 250
+
+            // ① 낙관적 네이티브 업데이트
+            val prefs = HomeWidgetPlugin.getData(context)
+            val todayKey = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+            val savedDate = prefs.getString("water_date", todayKey)
+            // 자정이 지나 날짜가 바뀌었으면 0부터 시작
+            val base = if (savedDate == todayKey) prefs.getInt("water_amount", 0) else 0
+            prefs.edit()
+                .putInt("water_amount", base + cupSize)
+                .putString("water_date", todayKey)
+                .apply()
+
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, HaruWidget::class.java))
+            for (id in ids) updateWidget(context, manager, id)
+
+            // ② DB 권위 저장 (기존 Dart 경로 재사용; 나중에 같은 값으로 prefs를 덮어써 정합성 유지)
+            val uri = Uri.parse("homeWidget://add_water?cup_size=$cupSize")
+            try {
+                HomeWidgetBackgroundIntent.getBroadcast(context, uri).send()
+            } catch (e: PendingIntent.CanceledException) {
+                // 백그라운드 트리거 실패 시에도 화면(prefs)은 이미 갱신된 상태
+            }
         }
 
         private fun midnightPendingIntent(context: Context): PendingIntent {
