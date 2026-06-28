@@ -2,7 +2,7 @@ name: haru_1min
 description: "하루 1분 - 물과 영양제를 간편하게 관리하세요"
 publish_to: 'none'
 
-version: 2.4.1+12
+version: 2.5.0+13
 
 environment:
   sdk: ^3.11.4
