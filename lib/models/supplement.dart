@@ -43,12 +43,16 @@ class Supplement {
     required this.createdAt,
   });
 
+  // nullable 필드(imagePath/memo)는 "미지정"과 "null로 지움"을 구분해야 한다.
+  // `?? this.x` 방식이면 null을 넘겨도 기존 값이 남아 삭제가 불가능해진다.
+  static const _unset = Object();
+
   Supplement copyWith({
     int? id,
     String? name,
-    String? imagePath,
+    Object? imagePath = _unset,
     String? mealTime,
-    String? memo,
+    Object? memo = _unset,
     List<NutrientAmount>? nutrients,
     bool? isActive,
     DateTime? createdAt,
@@ -56,9 +60,10 @@ class Supplement {
     return Supplement(
       id: id ?? this.id,
       name: name ?? this.name,
-      imagePath: imagePath ?? this.imagePath,
+      imagePath:
+          identical(imagePath, _unset) ? this.imagePath : imagePath as String?,
       mealTime: mealTime ?? this.mealTime,
-      memo: memo ?? this.memo,
+      memo: identical(memo, _unset) ? this.memo : memo as String?,
       nutrients: nutrients ?? this.nutrients,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
