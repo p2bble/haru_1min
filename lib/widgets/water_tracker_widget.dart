@@ -2,8 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import '../models/water_log.dart';
 import '../providers/water_provider.dart';
 import '../theme/app_theme.dart';
+
+/// 앱 전반의 시각 표기와 통일: '오전/오후 h:mm'
+String _formatLogTime(DateTime t) {
+  final period = t.hour < 12 ? '오전' : '오후';
+  final h = t.hour == 0 ? 12 : (t.hour > 12 ? t.hour - 12 : t.hour);
+  return '$period $h:${t.minute.toString().padLeft(2, '0')}';
+}
 
 class WaterTrackerWidget extends ConsumerWidget {
   const WaterTrackerWidget({super.key});
@@ -90,8 +98,19 @@ class WaterTrackerWidget extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              _UndoButton(
-                onTap: () => ref.read(waterAmountProvider.notifier).undoLast(),
+              _IconActionButton(
+                icon: Icons.receipt_long_rounded,
+                tooltip: '오늘 기록',
+                onTap: () => _showTodayLogs(context, ref),
+              ),
+              const SizedBox(width: 10),
+              _IconActionButton(
+                icon: Icons.undo,
+                tooltip: '마지막 기록 취소',
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref.read(waterAmountProvider.notifier).undoLast();
+                },
               ),
             ],
           ),
@@ -246,10 +265,16 @@ class _WaterButton extends StatelessWidget {
   }
 }
 
-class _UndoButton extends StatelessWidget {
+class _IconActionButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
   final VoidCallback onTap;
 
-  const _UndoButton({required this.onTap});
+  const _IconActionButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -257,23 +282,146 @@ class _UndoButton extends StatelessWidget {
     return Material(
       color: c.textSecondary.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Icon(
-            Icons.undo,
-            color: c.textSecondary,
-            size: 20,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Icon(icon, color: c.textSecondary, size: 20),
           ),
         ),
       ),
     );
   }
+}
+
+/// 오늘 마신 기록 시트 — 시각·양 타임라인 + 건별 삭제 + 다른 용량 빠른 추가.
+/// 합계만 보일 때 생기는 "아까 기록했었나?" 불안을 없앤다.
+void _showTodayLogs(BuildContext context, WidgetRef ref) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setSheetState) {
+        final c = ctx.c;
+        final notifier = ref.read(waterAmountProvider.notifier);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.water_drop, size: 18, color: c.primary),
+                    const SizedBox(width: 8),
+                    const Text('오늘 마신 기록',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 16)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // 기본 잔 외 용량 빠른 추가 (잔 크기 설정은 그대로 유지)
+                Row(
+                  children: [100, 250, 500].map((ml) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        label: Text('+${ml}ml'),
+                        labelStyle: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: c.primaryDark,
+                        ),
+                        backgroundColor: c.primary.withValues(alpha: 0.1),
+                        side: BorderSide.none,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () async {
+                          HapticFeedback.lightImpact();
+                          await notifier.add(ml);
+                          setSheetState(() {});
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 6),
+                Flexible(
+                  child: FutureBuilder<List<WaterLog>>(
+                    future: notifier.getTodayLogs(),
+                    builder: (ctx, snap) {
+                      final logs = snap.data;
+                      if (logs == null) {
+                        return const SizedBox(height: 80);
+                      }
+                      if (logs.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: Text(
+                              '아직 기록이 없어요. 첫 잔을 마셔볼까요?',
+                              style: TextStyle(
+                                  fontSize: 13, color: c.textSecondary),
+                            ),
+                          ),
+                        );
+                      }
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: logs.length,
+                        separatorBuilder: (_, _) =>
+                            Divider(height: 1, color: c.notTaken),
+                        itemBuilder: (_, i) {
+                          final log = logs[i];
+                          return Padding(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              children: [
+                                Text(
+                                  _formatLogTime(log.loggedAt),
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: c.textSecondary),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  '${log.amount}ml',
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  icon: Icon(Icons.close,
+                                      size: 16, color: c.textSecondary),
+                                  tooltip: '이 기록 삭제',
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () async {
+                                    await notifier.removeLog(log.id!);
+                                    setSheetState(() {});
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }
 
 class _CupSizeSelector extends StatelessWidget {

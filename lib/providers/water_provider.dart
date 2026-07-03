@@ -77,6 +77,12 @@ class WaterAmountNotifier extends StateNotifier<int> {
     await loadToday();
   }
 
+  /// 오늘 기록 시트에서 특정 기록 한 건 삭제
+  Future<void> removeLog(int id) async {
+    await _db.deleteWaterLog(id);
+    await loadToday();
+  }
+
   Future<List<WaterLog>> getTodayLogs() async {
     return _db.getWaterLogs(_todayKey);
   }
