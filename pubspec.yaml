@@ -2,7 +2,7 @@ name: haru_1min
 description: "하루 1분 - 물과 영양제를 간편하게 관리하세요"
 publish_to: 'none'
 
-version: 2.5.0+13
+version: 2.5.1+14
 
 environment:
   sdk: ^3.11.4
@@ -26,6 +26,7 @@ dependencies:
   # 알림
   flutter_local_notifications: ^18.0.1
   timezone: ^0.10.1
+  flutter_timezone: ^5.1.0
 
   # 유틸
   intl: ^0.19.0

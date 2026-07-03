@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -22,7 +23,14 @@ class NotificationService {
 
   static Future<void> init() async {
     tz.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation('Asia/Seoul'));
+    // 기기 타임존 기준으로 예약해야 해외에서도 설정한 시각에 울린다.
+    // 조회 실패 시에만 주 사용층 기준(Asia/Seoul)으로 폴백.
+    try {
+      final localTz = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(localTz.identifier));
+    } catch (_) {
+      tz.setLocalLocation(tz.getLocation('Asia/Seoul'));
+    }
     await _plugin.initialize(
       const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
