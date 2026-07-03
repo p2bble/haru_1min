@@ -3,7 +3,7 @@
 물과 영양제를 하루 1분으로 관리하는 Flutter 앱.
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.x-blue)
-![Version](https://img.shields.io/badge/version-2.5.1-orange)
+![Version](https://img.shields.io/badge/version-2.6.0-orange)
 
 ---
 
@@ -42,6 +42,7 @@ flutter build apk --release         # Android APK
 
 | 버전 | 주요 변경 |
 |---|---|
+| 2.6.0 | 알림 액션 버튼(모두 복용·한 잔·스누즈), 오늘 물 기록 타임라인, 시간대 모두 체크, 전용 알림 아이콘, 접근성 라벨 |
 | 2.5.1 | 예약 알림 미발화 수정(알림 리시버 등록), 기기 타임존 지원, 복용 팁 삭제 버그 수정, 고아 사진 정리 |
 | 2.5.0 | AI 영양소 추출·상한(UL) 중복 경고 카드 |
 | 2.4.1 | 위젯 물 추가 반응 즉시화 (낙관적 네이티브 업데이트) |
