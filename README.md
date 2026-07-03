@@ -3,7 +3,7 @@
 물과 영양제를 하루 1분으로 관리하는 Flutter 앱.
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.x-blue)
-![Version](https://img.shields.io/badge/version-2.6.0-orange)
+![Version](https://img.shields.io/badge/version-2.6.1-orange)
 
 ---
 
