@@ -107,16 +107,20 @@ class SupplementCard extends ConsumerWidget {
                 Positioned(
                   top: 0,
                   right: 0,
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: onMore,
-                    child: SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: Icon(
-                        Icons.more_horiz,
-                        size: 18,
-                        color: context.c.textSecondary.withValues(alpha: 0.6),
+                  child: Tooltip(
+                    message: '수정·삭제 메뉴',
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: onMore,
+                      child: SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: Icon(
+                          Icons.more_horiz,
+                          size: 18,
+                          color:
+                              context.c.textSecondary.withValues(alpha: 0.6),
+                        ),
                       ),
                     ),
                   ),
