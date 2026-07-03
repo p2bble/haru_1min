@@ -73,6 +73,19 @@ class TakenSupplementIdsNotifier extends StateNotifier<Set<int>> {
     state = ids.toSet();
   }
 
+  /// 시간대 "모두 체크" — 아직 안 먹은 것만 한 번에 복용 처리
+  Future<void> takeAll(Iterable<int> supplementIds) async {
+    if (_todayKey != _loadedDate) {
+      await loadToday();
+    }
+    final toTake =
+        supplementIds.where((id) => !state.contains(id)).toList();
+    for (final id in toTake) {
+      await _db.logSupplement(id);
+    }
+    if (toTake.isNotEmpty) state = {...state, ...toTake};
+  }
+
   Future<void> toggle(int supplementId) async {
     final today = _todayKey;
     if (today != _loadedDate) {

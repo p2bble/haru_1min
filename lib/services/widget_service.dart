@@ -1,5 +1,6 @@
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../database/db_helper.dart';
 
 class WidgetService {
@@ -26,6 +27,25 @@ class WidgetService {
           'water_date', DateFormat('yyyy-MM-dd').format(DateTime.now())),
     ]);
     await HomeWidget.updateWidget(androidName: 'HaruWidget');
+  }
+
+  /// DB·설정값을 직접 읽어 위젯을 갱신. 알림 액션 등 provider가 없는
+  /// 백그라운드 컨텍스트에서 사용한다.
+  static Future<void> updateFromDb() async {
+    final db = DbHelper();
+    final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final total = await db.getTodayWaterTotal(todayKey);
+    final supplements = await db.getActiveSupplements();
+    final takenIds = (await db.getTakenSupplementIds(todayKey)).toSet();
+    final prefs = await SharedPreferences.getInstance();
+    await update(
+      waterAmount: total,
+      waterGoal: prefs.getInt('waterGoal') ?? 2000,
+      cupSize: prefs.getInt('cupSize') ?? 250,
+      supplementTaken:
+          supplements.where((s) => takenIds.contains(s.id)).length,
+      supplementTotal: supplements.length,
+    );
   }
 }
 

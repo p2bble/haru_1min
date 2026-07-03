@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +9,7 @@ import '../models/supplement.dart';
 import '../providers/notification_provider.dart';
 import '../providers/supplement_provider.dart';
 import '../providers/water_provider.dart';
+import '../services/notification_service.dart';
 import '../services/nutrient_info.dart';
 import '../services/widget_service.dart';
 import '../theme/app_theme.dart';
@@ -35,15 +38,23 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
+  StreamSubscription<void>? _actionSub;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncWidget());
+    // 앱 실행 중 알림 액션(모두 복용·한 잔 마셨어요) 처리 시 화면 갱신
+    _actionSub = NotificationService.actionHandled.stream.listen((_) {
+      ref.read(waterAmountProvider.notifier).loadToday();
+      ref.read(takenSupplementIdsProvider.notifier).loadToday();
+    });
   }
 
   @override
   void dispose() {
+    _actionSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -104,6 +115,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.bar_chart_rounded),
+            tooltip: '통계',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const StatsScreen()),
@@ -111,6 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
+            tooltip: '설정',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -249,17 +262,20 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
               Material(
                 color: c.supplement.withValues(alpha: 0.15),
                 shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AddSupplementScreen()),
-                  ),
-                  child: SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: Icon(Icons.add, size: 20, color: c.supplementDark),
+                child: Tooltip(
+                  message: '영양제 추가',
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AddSupplementScreen()),
+                    ),
+                    child: SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Icon(Icons.add, size: 20, color: c.supplementDark),
+                    ),
                   ),
                 ),
               ),
@@ -446,7 +462,7 @@ class _SupplementSectionState extends ConsumerState<_SupplementSection> {
 }
 
 /// 현재 시간대 강조 그룹 — 틴트 배경 + "아침 · 지금" 라벨 + 카드 그리드
-class _NowGroup extends StatelessWidget {
+class _NowGroup extends ConsumerWidget {
   final String slot;
   final List<Supplement> items;
   final Set<int> takenIds;
@@ -460,7 +476,7 @@ class _NowGroup extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final remaining = items.where((s) => !takenIds.contains(s.id)).length;
     final c = context.c;
 
@@ -489,13 +505,51 @@ class _NowGroup extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  '${items.length}개 중 $remaining개 남았어요',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: c.supplementDark.withValues(alpha: 0.7),
+                Expanded(
+                  child: Text(
+                    '${items.length}개 중 $remaining개 남았어요',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: c.supplementDark.withValues(alpha: 0.7),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                // 같은 시간대는 보통 한 번에 먹는다 — 남은 게 2개 이상일 때 원탭 제공
+                if (remaining >= 2)
+                  Material(
+                    color: c.supplementDark,
+                    borderRadius: BorderRadius.circular(20),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        ref
+                            .read(takenSupplementIdsProvider.notifier)
+                            .takeAll(items.map((s) => s.id!));
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.done_all,
+                                size: 13, color: Colors.white),
+                            const SizedBox(width: 4),
+                            const Text(
+                              '모두 체크',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

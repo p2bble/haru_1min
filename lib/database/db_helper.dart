@@ -171,6 +171,11 @@ class DbHelper {
     return (result.first['total'] as int?) ?? 0;
   }
 
+  Future<void> deleteWaterLog(int id) async {
+    final database = await db;
+    await database.delete('water_logs', where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<void> deleteLastWaterLog(String dateKey) async {
     final database = await db;
     final rows = await database.query(
