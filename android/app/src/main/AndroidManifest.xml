@@ -51,6 +51,8 @@
 
         <!-- flutter_local_notifications 예약 알림 리시버 (필수 — 없으면 zonedSchedule 알림이 표시되지 않음) -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <!-- 알림 액션 버튼(백그라운드) 처리 리시버 (필수 — 없으면 액션 달린 알림이 게시되지 않음) -->
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
         <!-- 재부팅·앱 업데이트 후 예약 알림 복구 -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
             <intent-filter>
