@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/supplement.dart';
@@ -241,6 +243,28 @@ class DbHelper {
       'supplement_logs',
       where: 'supplementId NOT IN (SELECT id FROM supplements)',
     );
+    await _sweepOrphanImages(database, dirPath);
     return migrated;
+  }
+
+  /// 어떤 영양제도 참조하지 않는 이미지 파일 삭제.
+  /// 사진을 고른 뒤 저장하지 않고 나가면 파일이 남는데, 그대로 두면
+  /// 문서 폴더에 계속 쌓인다. 등록 진행 중인 사진을 지우지 않도록
+  /// 하루 이상 지난 파일만 대상으로 한다. 실패는 치명적이지 않으므로 무시.
+  Future<void> _sweepOrphanImages(Database database, String dirPath) async {
+    try {
+      final dir = Directory(dirPath);
+      if (!await dir.exists()) return;
+      final rows = await database.query('supplements',
+          columns: ['imagePath'], where: 'imagePath IS NOT NULL');
+      final referenced = rows.map((r) => r['imagePath'] as String).toSet();
+      final cutoff = DateTime.now().subtract(const Duration(days: 1));
+      for (final f in dir.listSync().whereType<File>()) {
+        if (referenced.contains(f.path)) continue;
+        try {
+          if ((await f.lastModified()).isBefore(cutoff)) await f.delete();
+        } catch (_) {}
+      }
+    } catch (_) {}
   }
 }
