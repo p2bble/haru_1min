@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -42,6 +43,16 @@ class NotificationService {
   static const _actionTakeAll = 'take_all';
   static const _actionSnooze = 'snooze';
 
+  // 채널 버전 접미사(_v2): 기존 water_ch/supp_ch은 vibrationPattern=null로
+  // 생성돼 일부 기기(vivo 등)에서 진동이 울리지 않는다. 채널 설정은 생성 후
+  // 불변이라, 진동 패턴을 담은 새 채널로 교체한다.
+  static const _waterChannelId = 'water_ch_v2';
+  static const _suppChannelId = 'supp_ch_v2';
+
+  // 진동 패턴(ms): 대기 → 진동 → 정지 → 진동. null이면 진동 안 하는 기기 대응.
+  static final Int64List _vibrationPattern =
+      Int64List.fromList([0, 400, 200, 400]);
+
   /// 알림 액션이 처리됐음을 UI에 알리는 스트림 (앱 실행 중 상태 갱신용)
   static final StreamController<void> actionHandled =
       StreamController<void>.broadcast();
@@ -63,6 +74,11 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onForegroundResponse,
       onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
+    // vibrationPattern=null로 굳어버린 구 채널 정리 (설정 목록에 유령으로 남지 않게)
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await android?.deleteNotificationChannel('water_ch');
+    await android?.deleteNotificationChannel('supp_ch');
   }
 
   static Future<void> _onForegroundResponse(NotificationResponse r) async {
@@ -112,9 +128,13 @@ class NotificationService {
         false;
   }
 
-  /// Android 14+는 정확 알람(SCHEDULE_EXACT_ALARM)이 기본 거부라
-  /// 그대로 예약하면 PlatformException이 발생한다.
-  /// 리마인더는 분 단위 정밀도가 필요 없으므로 inexact로 폴백한다.
+  /// 일부 제조사(vivo 등)는 앱이 백그라운드로 가면 몇 초 만에 프로세스를
+  /// freeze하면서 exactAllowWhileIdle 알람까지 제거한다(dumpsys alarm
+  /// Removal history의 Reason=frozen으로 실기기 확인). 시계 앱이 쓰는
+  /// alarmClock 클래스만이 freeze/절전에서 살아남으므로, 정확 알람 권한이
+  /// 있으면 alarmClock으로 예약한다. 권한이 없으면 inexact 폴백
+  /// (Android 14+는 SCHEDULE_EXACT_ALARM이 기본 거부라 그대로 예약하면
+  /// PlatformException 발생).
   static Future<AndroidScheduleMode> _scheduleMode() async {
     final canExact = await _plugin
             .resolvePlatformSpecificImplementation<
@@ -122,18 +142,33 @@ class NotificationService {
             ?.canScheduleExactNotifications() ??
         false;
     return canExact
-        ? AndroidScheduleMode.exactAllowWhileIdle
+        ? AndroidScheduleMode.alarmClock
         : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
-  static NotificationDetails _waterDetails() => const NotificationDetails(
+  /// 정확 알람 권한이 없으면 OS의 "알람 및 리마인더" 설정을 띄워 요청.
+  /// 알림을 켜는 시점에 한 번 호출한다 — 이 권한이 있어야 제조사 절전이
+  /// 알람을 지우지 않는다.
+  static Future<void> ensureExactAlarmPermission() async {
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return;
+    final canExact = await android.canScheduleExactNotifications() ?? false;
+    if (!canExact) {
+      await android.requestExactAlarmsPermission();
+    }
+  }
+
+  static NotificationDetails _waterDetails() => NotificationDetails(
         android: AndroidNotificationDetails(
-          'water_ch',
+          _waterChannelId,
           '물 알림',
           channelDescription: '물 마시기 리마인더',
           importance: Importance.high,
           priority: Priority.high,
-          actions: [
+          enableVibration: true,
+          vibrationPattern: _vibrationPattern,
+          actions: const [
             AndroidNotificationAction(
               _actionDrink,
               '한 잔 마셨어요',
@@ -144,14 +179,16 @@ class NotificationService {
         ),
       );
 
-  static NotificationDetails _suppDetails() => const NotificationDetails(
+  static NotificationDetails _suppDetails() => NotificationDetails(
         android: AndroidNotificationDetails(
-          'supp_ch',
+          _suppChannelId,
           '영양제 알림',
           channelDescription: '영양제 복용 리마인더',
           importance: Importance.high,
           priority: Priority.high,
-          actions: [
+          enableVibration: true,
+          vibrationPattern: _vibrationPattern,
+          actions: const [
             AndroidNotificationAction(
               _actionTakeAll,
               '모두 복용 완료',

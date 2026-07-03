@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/notification_provider.dart';
+import '../services/battery_service.dart';
 import '../providers/supplement_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/water_provider.dart';
@@ -62,6 +63,7 @@ class SettingsScreen extends ConsumerWidget {
           const _WaterNotiCard(),
           const SizedBox(height: 10),
           const _SupplementNotiCard(),
+          const _BatteryHintCard(),
           const SizedBox(height: 24),
           _SectionHeader('화면'),
           const SizedBox(height: 10),
@@ -458,6 +460,98 @@ class _BackupCard extends ConsumerWidget {
   }
 }
 
+// ─── 배터리 최적화 안내 카드 ──────────────────────────────────
+
+/// 배터리 최적화가 켜져 있으면(예외 미등록) 알림이 지연될 수 있다는 안내.
+/// 예외로 등록돼 있으면 아무것도 그리지 않는다.
+class _BatteryHintCard extends StatefulWidget {
+  const _BatteryHintCard();
+
+  @override
+  State<_BatteryHintCard> createState() => _BatteryHintCardState();
+}
+
+class _BatteryHintCardState extends State<_BatteryHintCard>
+    with WidgetsBindingObserver {
+  bool _ignoring = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _check();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // 설정에서 돌아왔을 때 상태 재확인 → 허용됐으면 카드 제거
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _check();
+  }
+
+  Future<void> _check() async {
+    final ignoring = await BatteryService.isIgnoringOptimizations();
+    if (mounted) setState(() => _ignoring = ignoring);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_ignoring) return const SizedBox.shrink();
+    final c = context.c;
+    const color = Color(0xFFF57C00);
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Material(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: BatteryService.requestIgnoreOptimizations,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.battery_alert_rounded,
+                    size: 20, color: color),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '알림이 늦게 도착할 수 있어요',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: color),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '절전 기능이 알림을 미뤄요. 눌러서 배터리 사용을 허용해주세요.',
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            color: c.textSecondary,
+                            height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right,
+                    size: 18, color: c.textSecondary.withValues(alpha: 0.5)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── 물 알림 카드 ────────────────────────────────────────────
 
 class _WaterNotiCard extends ConsumerWidget {
@@ -543,6 +637,8 @@ class _WaterNotiCard extends ConsumerWidget {
         }
         return;
       }
+      // 제조사 절전이 알람을 지우지 않도록 정확 알람 권한도 요청
+      await NotificationService.ensureExactAlarmPermission();
     }
     await ref
         .read(notificationProvider.notifier)
@@ -815,6 +911,8 @@ class _SupplementNotiRow extends ConsumerWidget {
         }
         return;
       }
+      // 제조사 절전이 알람을 지우지 않도록 정확 알람 권한도 요청
+      await NotificationService.ensureExactAlarmPermission();
     }
     await ref
         .read(notificationProvider.notifier)
